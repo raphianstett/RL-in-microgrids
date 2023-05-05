@@ -138,13 +138,15 @@ class State:
             if state.p > state.c or state.battery == 0:
                 return MDP.max_loss
             else:
-                return ((state.p + MDP.max_discharge)  - state.c) 
+                return ((state.p + MDP.max_discharge)  - state.c) if (state.p + MDP.max_discharge) < state.c else 0
         if(action == "do nothing"):
             # punish not doing something, if possible and reasonable
-            if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p and state.battery > 0:
+            if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
                 return MDP.max_loss
             else:
                 return state.p - state.c if state.p < state.c else 0
+
+     
         
     def get_cost(action, state):
         if action == "charge":
@@ -170,5 +172,8 @@ def get_battery_from_lst(lst):
     return bat
 
 
-
+#### TESTING #####
+##cons, prod, battery, time
+# state_1 = State(200,0,4,23)
+# print(State.get_reward("discharge",state_1))
 
