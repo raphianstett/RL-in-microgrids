@@ -129,7 +129,7 @@ class Baseline:
         return rewards, states, actions, action_ids
 
 
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(dat,5000)
+Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(dat,1)
 
 
 

@@ -129,7 +129,9 @@ def plot_cons_mean():
 
 def plot_prod_mean():
     plt.plot(get_prod_mean())
-    
+
+def changes():
+    return 0
 
 # plot_cons_mean()
 # plot_prod_mean()
