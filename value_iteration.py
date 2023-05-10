@@ -16,6 +16,7 @@ dat_test = StepFunctions.get_test_data()
 
 # import real data
 dat = RealData.get_real_data()
+training_data, test_data = RealData.split_data(dat, 1)
 
 # implementation of q-learning algorithm
 class ValueIteration:
@@ -129,19 +130,20 @@ class Baseline:
         return rewards, states, actions, action_ids
 
 
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(dat,1)
+Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(training_data,1)
 
 
 
 ################## APPLIED Q-TABLE #################################
 # print(Q_table_sol)
-reward, applied_actions = MDP.apply_q_table(Q_table_sol, dat)
 
-# print(reward)
+reward, applied_actions = MDP.apply_q_table(Q_table_sol, test_data)
+
+print(reward)
 # plt.plot(reward)
 # plt.show()
 # # # # print(applied_actions)
-print(MDP.get_total_costs(reward))
+# print(MDP.get_total_costs(reward))
 # print(len(applied_actions))
 
 
@@ -157,10 +159,10 @@ print(MDP.get_total_costs(reward))
 
 # ################## REWARDS #################################
 #plt.plot(rewards_per_episode)
-rewards = [x/len(dat) for x in rewards_per_episode]
-plt.plot(rewards)
-# # plt.plot(all_rewards[:1000])
-plt.show()
+# rewards = [x/len(dat) for x in rewards_per_episode]
+# plt.plot(rewards)
+# # # plt.plot(all_rewards[:1000])
+# plt.show()
 
 # print(rewards)
 
@@ -186,7 +188,7 @@ plt.show()
 #plt.show()
 
 ################ BASELINE TESTING ##########################
-# baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test(dat)
+baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test(test_data)
 # print("baseline: ")
 # print(baseline_rewards)
 # print(MDP.get_total_costs(baseline_rewards))
@@ -201,3 +203,14 @@ plt.show()
 
 
 # print(dat[:(24*3)])
+
+############# Baseline RL Comparison #################
+# diff = [baseline_rewards[i] - reward[i] for i in range(len(reward))]
+# print()
+# print(diff)
+# print(np.sum(diff))
+
+
+print("Q-Learning: " + str(MDP.get_total_costs(reward)))
+print("Baseline: " + str(MDP.get_total_costs(baseline_rewards)))
+print("without battery: -" + str(np.sum(test_data["Purchased"])))

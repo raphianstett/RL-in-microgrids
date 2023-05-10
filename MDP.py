@@ -7,6 +7,8 @@ import matplotlib.animation as animation
 import random
 import time
 
+from data import RealData
+
 
 class MDP:
     # construct state space
@@ -25,7 +27,7 @@ class MDP:
     consumption = ["low", "average", "high"]
     production = ["none", "low", "high"]
 
-    max_battery = 4
+    max_battery = 6
     battery = [*range(0,max_battery+1,1)]
     time = [*range(0,24,1)]
 
@@ -172,8 +174,35 @@ def get_battery_from_lst(lst):
     return bat
 
 
-#### TESTING #####
+#### Data analysis #####
 ##cons, prod, battery, time
 # state_1 = State(200,0,4,23)
 # print(State.get_reward("discharge",state_1))
+realdata = RealData.get_real_data()
 
+def data_to_states(data):
+    states = []
+    for i in range(len(data)):
+        states.append(State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i]))
+        # print(data["Consumption"][i])
+        print(State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i]).consumption)
+    return states
+
+def count_occurences(data):
+    cons = []
+    prod = []
+    c = data["Consumption"]
+    p = data["Production"]
+    [cons.append(MDP.get_consumption(x)) for x in c]
+    [prod.append(MDP.get_production(x)) for x in p]
+    
+
+    cons_occ = [0]*3
+    prod_occ = [0]*3
+    for i in range(len(cons_occ)):    
+        cons_occ[i] = cons.count(MDP.consumption[i])
+        prod_occ[i] = prod.count(MDP.production[i])
+        
+    return cons_occ, prod_occ     
+# data_to_states(realdata)
+#print(count_occurences(data_to_states(realdata)))

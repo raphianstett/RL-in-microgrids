@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 
+np.set_printoptions(threshold=np.inf)
+
+
 class StepFunctions:
     def generate_step_consumption():
         
@@ -55,9 +58,31 @@ class RealData:
 
         return dat
     
-
+    def split_data(data, days): 
+        test_data = pd.DataFrame(columns = ['Consumption','Production', 'Time','Date','Purchased'], index = range(0,12*days*24))
+        days_in_month = np.array([30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30, 31])
+        for i in range(12):
+            for j in range(days*24):
+             
+                which = 0 if i == 0 else days_in_month[[*range(0,i,1)]].sum()
+                #print(which)
+                # print(days_in_month[[*range(0,i,1)]].sum())
+                #print([0,*range(0,i,1)])
+                idx = (which * 24 + j)
+                row = data.loc[idx]
+                #print(row)
+                test_data.loc[i * days * 24 + j] = row
+                data = data.drop(idx)
+            data = data.set_axis(range(0, len(data)), axis = 'index')
+            test_data = test_data.set_axis(range(0, len(test_data)), axis = 'index')    
+        return data, test_data
+                      
+# month * days * hours
 d = RealData.get_real_data()
-
+# print()
 
 # print(d["Purchased"].sum()) 
 # = 1697651.0
+
+# training_data, test_data = RealData.split_data(d, 7)
+# print(training_data, test_data)
