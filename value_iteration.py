@@ -15,8 +15,8 @@ np.set_printoptions(threshold=np.inf)
 dat_test = StepFunctions.get_test_data()
 
 # import real data
-dat = RealData.get_real_data()
-training_data, test_data = RealData.split_data(dat, 1)
+data = RealData.get_real_data()
+# training_data, test_data = RealData.split_data(dat, 1)
 
 # implementation of q-learning algorithm
 class ValueIteration:
@@ -62,7 +62,7 @@ class ValueIteration:
             
             for i in range(0, len(data["Consumption"])): 
             
-                # we sample a float from a uniform distribution over 0 and 1
+                # sample a float from a uniform distribution over 0 and 1
                 # if the sampled flaot is less than the exploration proba
                 #     the agent selects arandom action
                 # else
@@ -130,20 +130,20 @@ class Baseline:
         return rewards, states, actions, action_ids
 
 
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(training_data,1)
+Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(data,50)
 
 
 
 ################## APPLIED Q-TABLE #################################
 # print(Q_table_sol)
 
-reward, applied_actions = MDP.apply_q_table(Q_table_sol, test_data)
+reward, applied_actions = MDP.apply_q_table(Q_table_sol, data)
 
 print(reward)
-# plt.plot(reward)
-# plt.show()
-# # # # print(applied_actions)
-# print(MDP.get_total_costs(reward))
+# # plt.plot(reward)
+# # plt.show()
+# print(applied_actions)
+print(MDP.get_total_costs(reward))
 # print(len(applied_actions))
 
 
@@ -154,14 +154,25 @@ print(reward)
 # plt.show()
 # print(Q_table_sol)
 
-## test function
+## APPLIED ACTIONS
+def analyse_actions(applied_actions):
+    l = int(np.ceil(len(applied_actions)/24))
+    av_day = [0]*24
+    for i in range(l-1):
+        for j in range(24):
+            av_day[j] += applied_actions[i*24+j]
+    day = [x/l for x in av_day]
+    return day
 
-
+# print(analyse_actions(applied_actions))
+# plt.plot(analyse_actions(applied_actions))
+# plt.show()
+#print(np.ceil(len(applied_actions)/24))
 # ################## REWARDS #################################
 #plt.plot(rewards_per_episode)
 # rewards = [x/len(dat) for x in rewards_per_episode]
 # plt.plot(rewards)
-# # # plt.plot(all_rewards[:1000])
+# plt.plot(all_rewards[:1000])
 # plt.show()
 
 # print(rewards)
@@ -182,13 +193,13 @@ print(reward)
 # plt.hist(battery)
 
 ################## STATES #################################  
-# print(states)
+# print(states[:1000])
 # print(len(states))
 
 #plt.show()
 
 ################ BASELINE TESTING ##########################
-baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test(test_data)
+baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test(data)
 # print("baseline: ")
 # print(baseline_rewards)
 # print(MDP.get_total_costs(baseline_rewards))
@@ -213,4 +224,4 @@ baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test
 
 print("Q-Learning: " + str(MDP.get_total_costs(reward)))
 print("Baseline: " + str(MDP.get_total_costs(baseline_rewards)))
-print("without battery: -" + str(np.sum(test_data["Purchased"])))
+print("without battery: -" + str(np.sum(data["Purchased"])))

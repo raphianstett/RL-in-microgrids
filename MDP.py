@@ -4,6 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import pandas as pd
 import random
 import time
 
@@ -13,21 +14,47 @@ from data import RealData
 class MDP:
     # construct state space
 
-    # getters for data discretization
-    def get_consumption(c):
+    # use this, for dynamic setting of bins
+    # dat = RealData.get_real_data()
+    # bins_cons = RealData.get_bin_boundaries(dat['Consumption'], 5)
+    # bins_prod = RealData.get_bin_boundaries(RealData.get_prod_nonzeros(dat['Production']))
+    
+    # # getters for data discretization
+    # bins: (0-250, 250-360, >360)
+    def get_consumption_three(c):
         return "low" if c < 250  else  ("average" if (c > 250) and (c < 360) else ("high"))
 
-    def get_production(p):
+    # bins: [0.  217.  266.  339.  424. 2817.]
+    def get_consumption(p):
+        prod = ["very low", "low", "average", "high", "very high"]
+        intervals = [pd.Interval(left = 0, right = 215, closed = 'both'),pd.Interval(left = 215,right = 270, closed = 'right'), pd.Interval(left = 270,right =  340, closed = 'right'), pd.Interval(left = 340,right =  430, closed = 'right'), pd.Interval(left = 430,right =  2900, closed = 'right')]
+        return prod[0] if p in intervals[0] else (prod[1] if p in intervals[1] else (prod[2] if p in intervals[2] else (prod[3] if p in intervals[3] else prod[4]))) 
+
+    # def get_consumption
+
+    # with 3 bins: (0, 0-1200, >1200)
+    def get_production_three(p):
         return "none" if p == 0  else  ("low" if (p > 0) and (p < 1200) else ("high"))
+    # with 5 bins: (0, 0-330, 330-1200, 1200 - 3200, >3200), each bin with equal frequency
+    def get_production(p):
+        prod = ["none", "low", "average", "high", "very high"]
+        intervals = [pd.Interval(left = 0, right = 0, closed = 'both'),pd.Interval(left = 0,right = 330, closed = 'right'), pd.Interval(left = 330,right =  1200, closed = 'right'), pd.Interval(left = 1200,right =  3200, closed = 'right'), pd.Interval(left = 3200,right =  7000, closed = 'right')]
+        return prod[0] if p in intervals[0] else (prod[1] if p in intervals[1] else (prod[2] if p in intervals[2] else (prod[3] if p in intervals[3] else prod[4]))) 
 
 
+    # function to add noise for prediction of production
+    def get_predict_prod(p):
+        mu, sigma = 1, 0.2
+        rand = np.random.normal(mu, sigma, 1000)
+        return rand * p 
+    
     # state space
 
     # steps
     consumption = ["low", "average", "high"]
     production = ["none", "low", "high"]
 
-    max_battery = 6
+    max_battery = 4
     battery = [*range(0,max_battery+1,1)]
     time = [*range(0,24,1)]
 
@@ -35,10 +62,11 @@ class MDP:
     # dimensions
     n_consumption = len(consumption)
     n_production = len(production)
+    n_pred_production = len(production)
     n_battery = len(battery)
 
     n_time = len(time)
-    n_states = n_consumption * n_production * n_battery * n_time
+    n_states = n_consumption * n_production * n_battery * n_time * n_pred_production
 
 
 
@@ -53,7 +81,7 @@ class MDP:
         return MDP.action_space.index(action)
 
     # reward function
-    max_loss = -10000
+    max_loss = -1000000
 
 
     # total cost function after applying learned policy
@@ -91,14 +119,16 @@ class MDP:
 
 
 # class which constructs state
+# Consumption, Production, Battery state, time, prediction of production in text timestep
 class State:
-    def __init__(self, c, p, battery, time):
+    def __init__(self, c, p, battery, time, pred):
         self.consumption = MDP.get_consumption(c)
         self.production = MDP.get_production(p)
         self.battery = battery
         self.time = time
         self.c = c
         self.p = p
+        self.pred = pred
     
 
     def get_next_state(self, action, new_c, new_p, new_time):
@@ -134,23 +164,26 @@ class State:
             if state.battery == MDP.max_battery or (state.p - state.c) < 1000 :
                 return MDP.max_loss 
             else:
-                return 0 # state.p - (max_charge + state.c)
+                return  - (state.p - (MDP.max_charge + state.c))**2
                     
         if(action == "discharge"):
-            if state.p > state.c or state.battery == 0:
+            #if state.p > state.c or state.battery == 0:
+            if state.battery == 0:
                 return MDP.max_loss
             else:
-                return ((state.p + MDP.max_discharge)  - state.c) if (state.p + MDP.max_discharge) < state.c else 0
+                return - ((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
         if(action == "do nothing"):
             # punish not doing something, if possible and reasonable
-            if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
-                return MDP.max_loss
-            else:
-                return state.p - state.c if state.p < state.c else 0
+            # if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
+            #     return MDP.max_loss
+            # else:
+            return -(state.p - state.c)**2 #if state.p < state.c else 0
 
      
         
     def get_cost(action, state):
+        if action == "charge" and state.battery == MDP.max_battery or action == "discharge" and state.battery == 0:
+            return -10000
         if action == "charge":
             return 0
         if action == "discharge":
@@ -206,3 +239,6 @@ def count_occurences(data):
     return cons_occ, prod_occ     
 # data_to_states(realdata)
 #print(count_occurences(data_to_states(realdata)))
+
+plt.plot(MDP.get_predict_prod())
+plt.show()
