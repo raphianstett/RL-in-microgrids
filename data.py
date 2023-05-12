@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 np.set_printoptions(threshold=np.inf)
 
@@ -76,7 +78,27 @@ class RealData:
             data = data.set_axis(range(0, len(data)), axis = 'index')
             test_data = test_data.set_axis(range(0, len(test_data)), axis = 'index')    
         return data, test_data
-                      
+
+    def equalObs(x, nbin):
+        nlen = len(x)
+        return np.interp(np.linspace(0, nlen, nbin + 1),
+                        np.arange(nlen),
+                        np.sort(x))
+
+    #create histogram with equal-frequency bins 
+    def get_bin_boundaries(data, nbins):
+        n, bins, patches = plt.hist(data, RealData.equalObs(data, nbins), edgecolor='black')
+        return bins
+
+    def get_prod_nonzeros(prod):
+        p = []
+        for x in prod:
+            if x != 0:
+                p.append(x)
+            else: 
+                continue
+        return p
+         
 # month * days * hours
 d = RealData.get_real_data()
 # print()

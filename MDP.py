@@ -45,14 +45,19 @@ class MDP:
     # function to add noise for prediction of production
     def get_predict_prod(p):
         mu, sigma = 1, 0.2
-        rand = np.random.normal(mu, sigma, 1000)
-        return rand * p 
+        rand = np.random.normal(mu, sigma, 1)
+        return int(rand * p) 
     
-    # state space
+    # function to return action_id with largest Q-value (!=0)
+    # returns 1 (do nothing), if all q-values are the same
+    
+    def get_best_action(q_values):
+        q_values[q_values == 0] = min(q_values)
+        return np.argmax(q_values) if max(q_values) != 0 else 1 # state space
 
     # steps
-    consumption = ["low", "average", "high"]
-    production = ["none", "low", "high"]
+    consumption = ["very low", "low", "average", "high", "very high"]
+    production = ["none", "low","average", "high", "very high"]
 
     max_battery = 4
     battery = [*range(0,max_battery+1,1)]
@@ -69,8 +74,6 @@ class MDP:
     n_states = n_consumption * n_production * n_battery * n_time * n_pred_production
 
 
-
-
     # action space  
     action_space = ["discharge", "do nothing", "charge"]
     n_actions = len(action_space)
@@ -81,7 +84,7 @@ class MDP:
         return MDP.action_space.index(action)
 
     # reward function
-    max_loss = -1000000
+    max_loss = -999999999999999999
 
 
     # total cost function after applying learned policy
@@ -95,21 +98,23 @@ class MDP:
     def apply_q_table(Q_table, dat):
         rewards = []
         actions = []
-        current_state = State(dat["Consumption"][0], dat["Production"][0], 2, dat["Time"][0])
+        battery = []
+        current_state = State(dat["Consumption"][0], dat["Production"][0], 2, dat["Production"][1], dat["Time"][0])
         
         for i in range(len(dat["Consumption"])):
             if i == len(dat["Consumption"])-1:
                 break
             # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
-            action = MDP.action_space[np.argmax(Q_table[State.get_id(current_state),:])]
+            action = MDP.action_space[MDP.get_best_action(Q_table[State.get_id(current_state),:])]
             # print("State: " + str(State.get_id(current_state)))
             # print("Action ID: " + str(MDP.get_action_id(action)))
             # print("Q table: " + str(Q_table[State.get_id(current_state),]))
             rewards.append(State.get_cost(action, current_state))
             actions.append(MDP.get_action_id(action))
-            current_state = State.get_next_state(current_state, action, dat["Consumption"][i+1], dat["Production"][i+1], dat["Time"][i+1])
+            battery.append(current_state.battery)
+            current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%len(dat["Consumption"])], dat["Production"][(i+1)%len(dat["Consumption"])], dat["Production"][(i+2)%len(dat["Consumption"])], dat["Time"][(i+1)%len(dat["Consumption"])])
         
-        return rewards, actions
+        return rewards, actions, battery
 
     def iterate_q(Q_table):
         actions = []
@@ -121,17 +126,18 @@ class MDP:
 # class which constructs state
 # Consumption, Production, Battery state, time, prediction of production in text timestep
 class State:
-    def __init__(self, c, p, battery, time, pred):
+    def __init__(self, c, p, battery, p_next, time):
         self.consumption = MDP.get_consumption(c)
         self.production = MDP.get_production(p)
         self.battery = battery
         self.time = time
         self.c = c
         self.p = p
-        self.pred = pred
+        self.pred = MDP.get_predict_prod(p_next)
+        self.predicted_prod = MDP.get_production(self.pred)
     
 
-    def get_next_state(self, action, new_c, new_p, new_time):
+    def get_next_state(self, action, new_c, new_p,  new_pred, new_time):
         
         # update battery state based on chosen action
         
@@ -142,47 +148,60 @@ class State:
         else:
             next_battery = self.battery
 
-        next_state = State(new_c, new_p, next_battery, new_time)
+        next_state = State(new_c, new_p, next_battery, new_pred, new_time)
 
         return next_state
     
     def get_id(state):
         # consumption
-        c = 0 if (state.consumption == "low") else (1 if (state.consumption == "average") else 2)
-        p = 0 if (state.production == "none") else (1 if (state.consumption == "low") else 2)
+        c = 0 if (state.consumption == "very low") else (1 if (state.consumption == "low") else (2 if (state.consumption == "average") else (3 if (state.consumption == "high") else 4)))
+        # production
+        p = 0 if (state.production == "none") else (1 if (state.production == "low") else (2 if (state.production == "average") else (3 if (state.production == "high") else 4)))
+        # predicted production
+        pred = 0 if (state.predicted_prod == "none") else (1 if (state.predicted_prod == "low") else (2 if (state.predicted_prod == "average") else (3 if (state.predicted_prod == "high") else 4)))
      
-        return c * (MDP.n_production*MDP.n_battery*24) + p *(MDP.n_battery*24) + state.battery * 24 + state.time
+        return c * (MDP.n_production*MDP.n_battery*MDP.n_pred_production*24) + p *(MDP.n_battery*MDP.n_pred_production*24) + state.battery * (24*MDP.n_pred_production) + pred * 24 + state.time
 
         
 
     def get_reward(action, state):
-    
-        # max_loss if action not possible, else calculate reward as difference between production and consumption
+        
+        f_char = (state.p / state.pred) if state.p != 0 and state.pred != 0 else 1
+        f_char = min(f_char, 2)
+        f_dischar = (state.pred / state.p) if state.p != 0 and state.pred != 0 else 1
+        f_dischar = min(f_dischar, 2)
+
+        f_nothing = min(max((state.p / state.c),(state.c / state.p)),100) if (state.p != 0 and state.c != 0) else 1
+
+        # max_loss if action not possible, else calculate reward as squared difference between production and consumption
         # based on chosen action 
         if(action == "charge"):
-            
+            # also better if predicted production is smaller than current
+            # charging is good, if next production is smaller
             if state.battery == MDP.max_battery or (state.p - state.c) < 1000 :
                 return MDP.max_loss 
             else:
-                return  - (state.p - (MDP.max_charge + state.c))**2
+                return  - f_char *(state.p - (MDP.max_charge + state.c))**2
                     
         if(action == "discharge"):
             #if state.p > state.c or state.battery == 0:
             if state.battery == 0:
                 return MDP.max_loss
             else:
-                return - ((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
+                # discharging is also good, if next production is larger than current
+                return -f_dischar*((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
         if(action == "do nothing"):
             # punish not doing something, if possible and reasonable
             # if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
             #     return MDP.max_loss
             # else:
-            return -(state.p - state.c)**2 #if state.p < state.c else 0
+            return -f_nothing*(state.p - state.c)**2 #if state.p < state.c else 0
 
      
         
     def get_cost(action, state):
         if action == "charge" and state.battery == MDP.max_battery or action == "discharge" and state.battery == 0:
+            # return state.p - state.c
             return -10000
         if action == "charge":
             return 0
@@ -239,6 +258,3 @@ def count_occurences(data):
     return cons_occ, prod_occ     
 # data_to_states(realdata)
 #print(count_occurences(data_to_states(realdata)))
-
-plt.plot(MDP.get_predict_prod())
-plt.show()

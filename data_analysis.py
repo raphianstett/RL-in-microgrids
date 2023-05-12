@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 
 
-
 dat = pd.read_csv('household_with_pv.csv', delimiter=";")
 
 
@@ -139,5 +138,58 @@ def changes():
 # generate step consumption
 # 400 Wh 7 - 14, 300 Wh 14 - 19, 400 Wh 19 - 22
 
+## Binning for finer discretization
 
+dat_prod = dat[['Production', 'Time']]
+
+# labels = ['none', 'low' 'average', 'high', 'very high']
+# dat['bin_qcut'] = pd.qcut(dat['Production'], q=5, precision=1, labels=labels)
+# dat['bin_qcut'] = 
+# print(prod_nonzeros)
+nonzeros = np.array(prod_nonzeros)
+
+# hist, edges = np.histogram(nonzeros, bins = 5)
+# print(edges)
+# # print(hist)
+# # plt.stairs(hist, edges)
+# print(np.flip(hist))
+# plt.hist(nonzeros, bins = np.flip(hist))
+# plt.show()
+
+prod = dat['Production']
+
+def check_prediction(prod):
+    x = []
+    for i in range(len(prod)-1):
+        if(prod[i] == 0):
+            x.append(0)
+            
+        else:
+            x.append(prod[i+1]/prod[i])
+        
+    # x = np.array(x)
+    # x[np.isnan(x)] = 0
+    # x[np.isinf(x)] = 0
+    return x
+
+def check_difference(cons, prod):
+    q = [0]*len(cons)
+    # prod = list(prod)
+    # cons = list(cons)
+    # prod[prod == 0] = 1
+    # cons[cons == 0] = 1
+    for i in range(len(cons)):
+        quot = max((prod[i] / cons[i]),(cons[i]/ prod[i])) if (prod[i] != 0 and cons[i] != 0) else 1
+        q[i] = quot
+    #diff_bool = [diff[i]>=2000 for i in range(len(diff))]
+    #print(len(diff_bool))
+    return q
+
+# print(check_difference(dat["Consumption"], dat['Production']))
+#print(check_difference(dat["Consumption"], dat['Production']))
+print(max(check_difference(dat["Consumption"], dat['Production'])))
+print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
+print(np.median(check_difference(dat["Consumption"], dat['Production'])))
+# plt.plot(check_difference(dat["Consumption"], dat['Production'])[:24])
+# plt.show()
 

@@ -28,7 +28,7 @@ class ValueIteration:
         exploration_proba = 1
 
         #exploartion decreasing decay for exponential decreasing
-        exploration_decreasing_decay = 0.001
+        exploration_decreasing_decay = 4 / n_episodes
 
         # minimum of exploration proba
         min_exploration_proba = 0.01
@@ -37,7 +37,7 @@ class ValueIteration:
         gamma = 0.8
 
         #learning rate
-        lr = 0.1
+        lr = 0.4
 
         # initialize rewards per episode
 
@@ -52,7 +52,7 @@ class ValueIteration:
         Q_table = np.zeros((MDP.n_states, MDP.n_actions))
         
         # we initialize the first state of the episode
-        current_state = State(data["Consumption"][0], data["Production"][0], 2, data["Time"][0])
+        current_state = State(data["Consumption"][0], data["Production"][0], 2, data["Production"][1] ,data["Time"][0])
             
             
         for e in range(n_episodes):
@@ -71,15 +71,17 @@ class ValueIteration:
                 if np.random.uniform(0,1) < exploration_proba:
                     action = MDP.action_space[np.random.randint(0,MDP.n_actions)]
                 else:
-                    action = MDP.action_space[np.argmax(Q_table[State.get_id(current_state),:])]
+                    a = Q_table[State.get_id(current_state),:]
+                    action = MDP.action_space[MDP.get_best_action(a)]
+                    # action = MDP.action_space[np.argmax(Q_table[State.get_id(current_state),:])]
                 
                 # The environment runs the chosen action and returns the next state and the reward for the action in the current state.
                 reward = State.get_reward(action, current_state)
 
-                if i == len(data["Consumption"])-1:
-                    next_state = State.get_next_state(current_state, action, data["Consumption"][0], data["Production"][0], data["Time"][0])
-                else:
-                    next_state = State.get_next_state(current_state, action, data["Consumption"][i+1], data["Production"][i+1], data["Time"][i+1])
+                # if i == len(data["Consumption"])-1:
+                #     next_state = State.get_next_state(current_state, action, data["Consumption"][0], data["Production"][0], data["Time"][0])
+                # else:
+                next_state = State.get_next_state(current_state, action, data["Consumption"][(i+1)%len(data["Consumption"])], data["Production"][(i+1)%len(data["Consumption"])], data["Production"][(i+2)%len(data["Consumption"])], data["Time"][(i+1)%len(data["Consumption"])])
 
             
                 # We update our Q-table using the Q-learning iteration
@@ -97,6 +99,7 @@ class ValueIteration:
             #We update the exploration proba using exponential decay formula 
             exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
             rewards_per_episode.append(total_episode_reward)
+            print(e)
         
         return Q_table, rewards_per_episode, all_rewards, chosen_actions, states_id, states, battery
 
@@ -107,7 +110,7 @@ class Baseline:
         states = []
         actions = []
         action_ids = []
-        current_state = State(data["Consumption"][0], data["Production"][0], 2, data["Time"][0])
+        current_state = State(data["Consumption"][0], data["Production"][0], 2,data["Production"][1], data["Time"][0])
         
         for i in range(1,len(data["Consumption"])):
             # current_state = State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i])
@@ -125,25 +128,26 @@ class Baseline:
             states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
             actions.append(action)
             action_ids.append(MDP.get_action_id(action))
-            current_state = State.get_next_state(current_state, action, data["Consumption"][i], data["Production"][i], data["Time"][i])
+            current_state = State.get_next_state(current_state, action, data["Consumption"][i], data["Production"][i],data["Production"][(i+1)%len(data["Production"])], data["Time"][i])
 
         return rewards, states, actions, action_ids
 
 
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(data,50)
+Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(data,10)
 
 
 
 ################## APPLIED Q-TABLE #################################
 # print(Q_table_sol)
 
-reward, applied_actions = MDP.apply_q_table(Q_table_sol, data)
+reward, applied_actions, battery_states = MDP.apply_q_table(Q_table_sol, data)
 
-print(reward)
-# # plt.plot(reward)
-# # plt.show()
+# print(reward)
+
 # print(applied_actions)
-print(MDP.get_total_costs(reward))
+# plt.hist(applied_actions)
+# plt.show()
+# print(MDP.get_total_costs(reward))
 # print(len(applied_actions))
 
 
@@ -153,6 +157,8 @@ print(MDP.get_total_costs(reward))
 # # plt.plot(applied_actions)
 # plt.show()
 # print(Q_table_sol)
+plt.hist(battery_states)
+plt.show()
 
 ## APPLIED ACTIONS
 def analyse_actions(applied_actions):
@@ -170,11 +176,10 @@ def analyse_actions(applied_actions):
 #print(np.ceil(len(applied_actions)/24))
 # ################## REWARDS #################################
 #plt.plot(rewards_per_episode)
-# rewards = [x/len(dat) for x in rewards_per_episode]
+rewards = [x/len(data["Purchased"]) for x in rewards_per_episode]
 # plt.plot(rewards)
-# plt.plot(all_rewards[:1000])
 # plt.show()
-
+# print(all_rewards)
 # print(rewards)
 
 # print(len(dat))
@@ -190,8 +195,9 @@ def analyse_actions(applied_actions):
 
 
 ############## BATTERY #################################
-# plt.hist(battery)
 
+# plt.hist(battery)
+# plt.show()
 ################## STATES #################################  
 # print(states[:1000])
 # print(len(states))
@@ -222,6 +228,12 @@ baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test
 # print(np.sum(diff))
 
 
-print("Q-Learning: " + str(MDP.get_total_costs(reward)))
-print("Baseline: " + str(MDP.get_total_costs(baseline_rewards)))
+print("Q-Learning: " + str(np.sum(reward)))
+print("Baseline:   " + str(MDP.get_total_costs(baseline_rewards)))
 print("without battery: -" + str(np.sum(data["Purchased"])))
+
+
+# diff = [data["Purchased"][i] + reward[i] for i in range(len(reward))]
+# print("diff: " + str(diff))
+# print(len(reward))
+# print(len(data["Purchased"]))
