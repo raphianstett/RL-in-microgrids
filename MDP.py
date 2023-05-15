@@ -9,7 +9,7 @@ import random
 import time
 
 from data import RealData
-
+from collections import Counter
 
 class MDP:
     # construct state space
@@ -53,14 +53,21 @@ class MDP:
     
     def get_best_action(q_values):
         q_values[q_values == 0] = min(q_values)
-        return np.argmax(q_values) if max(q_values) != 0 else 1 # state space
+        return np.argmax(q_values) if max(q_values) != 0 else 2 
+    
+    # state space
 
     # steps
     consumption = ["very low", "low", "average", "high", "very high"]
     production = ["none", "low","average", "high", "very high"]
 
-    max_battery = 4
-    battery = [*range(0,max_battery+1,1)]
+    # battery
+    max_battery = 6
+    # battery = [*range(0,max_battery+1,0.5)]
+    step_size = 0.5 
+    battery = list(np.arange(0.0, float(max_battery) + step_size, step_size))
+
+    # time
     time = [*range(0,24,1)]
 
 
@@ -72,16 +79,20 @@ class MDP:
 
     n_time = len(time)
     n_states = n_consumption * n_production * n_battery * n_time * n_pred_production
-
-
+    
     # action space  
-    action_space = ["discharge", "do nothing", "charge"]
+    action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge"]
     n_actions = len(action_space)
     max_discharge = 1000
+    discharge_low = 500
     max_charge = 1000
+    charge_low = 500
 
     def get_action_id(action):
         return MDP.action_space.index(action)
+
+    def get_battery_id(battery):
+        return int(battery * 2) 
 
     # reward function
     max_loss = -999999999999999999
@@ -94,19 +105,20 @@ class MDP:
             
             return np.sum(rewards)
 
+                    
 
     def apply_q_table(Q_table, dat):
         rewards = []
         actions = []
         battery = []
-        current_state = State(dat["Consumption"][0], dat["Production"][0], 2, dat["Production"][1], dat["Time"][0])
+        current_state = State(dat["Consumption"][0], dat["Production"][0], 2.0, dat["Production"][1], dat["Time"][0])
         
         for i in range(len(dat["Consumption"])):
             if i == len(dat["Consumption"])-1:
                 break
             # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
             action = MDP.action_space[MDP.get_best_action(Q_table[State.get_id(current_state),:])]
-            # print("State: " + str(State.get_id(current_state)))
+            # print("State: " + str(State.get_id(current_state))
             # print("Action ID: " + str(MDP.get_action_id(action)))
             # print("Q table: " + str(Q_table[State.get_id(current_state),]))
             rewards.append(State.get_cost(action, current_state))
@@ -141,10 +153,14 @@ class State:
         
         # update battery state based on chosen action
         
-        if action == "discharge" and self.battery > 0:
-            next_battery = self.battery - 1
-        elif action == "charge" and self.battery < MDP.max_battery:
-            next_battery = self.battery + 1
+        if action == "discharge_high" and self.battery > 0.5:
+            next_battery = self.battery - 1.0
+        elif action == "discharge_low" and self.battery > 0:
+            next_battery = self.battery - MDP.step_size
+        elif action == "charge" and self.battery <= MDP.max_battery - 1:
+            next_battery = self.battery + 1.0
+        elif action == "charge_low" and self.battery < MDP.max_battery:
+            next_battery = self.battery + MDP.step_size
         else:
             next_battery = self.battery
 
@@ -160,7 +176,7 @@ class State:
         # predicted production
         pred = 0 if (state.predicted_prod == "none") else (1 if (state.predicted_prod == "low") else (2 if (state.predicted_prod == "average") else (3 if (state.predicted_prod == "high") else 4)))
      
-        return c * (MDP.n_production*MDP.n_battery*MDP.n_pred_production*24) + p *(MDP.n_battery*MDP.n_pred_production*24) + state.battery * (24*MDP.n_pred_production) + pred * 24 + state.time
+        return c * (MDP.n_production*MDP.n_battery*MDP.n_pred_production*24) + p *(MDP.n_battery*MDP.n_pred_production*24) + MDP.get_battery_id(state.battery) * (MDP.n_pred_production*24) + pred * 24 + state.time
 
         
 
@@ -175,38 +191,54 @@ class State:
 
         # max_loss if action not possible, else calculate reward as squared difference between production and consumption
         # based on chosen action 
-        if(action == "charge"):
-            # also better if predicted production is smaller than current
-            # charging is good, if next production is smaller
-            if state.battery == MDP.max_battery or (state.p - state.c) < 1000 :
+        if action == 'charge':
+            
+            if state.battery >= MDP.max_battery - MDP.step_size or (state.p - state.c) < MDP.max_charge :
                 return MDP.max_loss 
             else:
-                return  - f_char *(state.p - (MDP.max_charge + state.c))**2
-                    
-        if(action == "discharge"):
+                return  -((MDP.max_battery+state.battery) / MDP.max_battery)*(state.p - (MDP.max_charge + state.c))**2
+        if action == 'charge_low':
+            if state.battery == MDP.max_battery or state.p - state.c < MDP.charge_low:
+                return MDP.max_loss
+            else:
+                return -((MDP.max_battery+state.battery) / MDP.max_battery)*(state.p - (MDP.charge_low + state.c))**2
+        if action == "discharge_high" :
             #if state.p > state.c or state.battery == 0:
-            if state.battery == 0:
+            if state.battery < 1.0:
                 return MDP.max_loss
             else:
                 # discharging is also good, if next production is larger than current
-                return -f_dischar*((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
-        if(action == "do nothing"):
+                return -(MDP.max_battery / (state.battery + MDP.max_battery))*((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
+        if action == 'discharge_low':
+            if state.battery < 0.5:
+                return MDP.max_loss
+            else:
+                # discharging is also good, if next production is larger than current
+                return -(MDP.max_battery / (state.battery + MDP.max_battery))*((state.p + MDP.discharge_low)  - state.c)**2
+        if action == "do nothing":
             # punish not doing something, if possible and reasonable
             # if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
             #     return MDP.max_loss
-            # else:
-            return -f_nothing*(state.p - state.c)**2 #if state.p < state.c else 0
+            #else:
+            return -max((MDP.max_battery / (state.battery + MDP.max_battery)), (state.battery + MDP.max_battery / (MDP.max_battery)))\
+                *(state.p - state.c)**2 
 
      
         
     def get_cost(action, state):
-        if action == "charge" and state.battery == MDP.max_battery or action == "discharge" and state.battery == 0:
+        if action == "charge" and state.battery == MDP.max_battery or action == "discharge" and state.battery < 1.0 or action == "discharge_low" and state.battery < 0.5:
             # return state.p - state.c
             return -10000
         if action == "charge":
-            return 0
-        if action == "discharge":
+            #return (state.p - (state.c + MDP.max_charge)) if (state.p < state.c + MDP.max_charge) else 0
+            return (state.p - (state.c + MDP.max_charge)) if (state.p < state.c + MDP.max_charge) else 0
+        
+        if action == "charge_low":
+            return (state.p - (state.c + MDP.charge_low)) if (state.p < state.c + MDP.charge_low) else 0
+        if action == "discharge_high":
             return ((state.p + MDP.max_discharge)  - state.c) if ((state.p + MDP.max_discharge)  < state.c) else 0
+        if action == "discharge_low":
+            return ((state.p + MDP.discharge_low)  - state.c) if ((state.p + MDP.max_discharge)  < state.c) else 0
         if action == "do nothing":
             return state.p - state.c if state.p < state.c else 0
 
@@ -234,27 +266,39 @@ realdata = RealData.get_real_data()
 
 def data_to_states(data):
     states = []
-    for i in range(len(data)):
-        states.append(State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i]))
+    for i in range(len(data)-1):
+        #print(MDP.get_production(data["Production"][i]))
+        # data["Consumption"][i], data["Production"][i], , data["Time"][i]
+        states.append((MDP.get_consumption(data["Consumption"][i]), MDP.get_production(data["Production"][i]),MDP.get_production(data["Production"][i+1])))
         # print(data["Consumption"][i])
-        print(State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i]).consumption)
-    return states
+        # print(State(data["Consumption"][i], data["Production"][i], 2, data["Production"][i+1],data["Time"][i]).consumption)
+    # return states   
+    return Counter(states)
 
 def count_occurences(data):
     cons = []
     prod = []
-    c = data["Consumption"]
-    p = data["Production"]
+    c = list(data["Consumption"])
+    p = list(data["Production"])
     [cons.append(MDP.get_consumption(x)) for x in c]
     [prod.append(MDP.get_production(x)) for x in p]
     
 
-    cons_occ = [0]*3
-    prod_occ = [0]*3
+    cons_occ = [0]*5
+    prod_occ = [0]*5
     for i in range(len(cons_occ)):    
         cons_occ[i] = cons.count(MDP.consumption[i])
         prod_occ[i] = prod.count(MDP.production[i])
         
     return cons_occ, prod_occ     
 # data_to_states(realdata)
-#print(count_occurences(data_to_states(realdata)))
+# print(data_to_states(realdata))
+occurences = data_to_states(realdata).values()
+#print(list(occurences))
+# plt.plot(list(occurences))
+# plt.show()
+# check getid
+#high very high 3.5 very high 14
+
+# s = State(440, 3300, 3.5, 3300, 0)
+# print(State.get_id(s))

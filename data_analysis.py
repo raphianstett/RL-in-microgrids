@@ -178,18 +178,46 @@ def check_difference(cons, prod):
     # cons = list(cons)
     # prod[prod == 0] = 1
     # cons[cons == 0] = 1
-    for i in range(len(cons)):
-        quot = max((prod[i] / cons[i]),(cons[i]/ prod[i])) if (prod[i] != 0 and cons[i] != 0) else 1
-        q[i] = quot
-    #diff_bool = [diff[i]>=2000 for i in range(len(diff))]
+    #for i in range(len(cons)):
+        # diff = max((prod[i] / cons[i]),(cons[i]/ prod[i])) if (prod[i] != 0 and cons[i] != 0) else 1
+        # q[i] = quot
+    diff = [prod[i] - cons[i] for i in range(len(prod))]
+    diff_bool = [diff[i] > 200 and diff[i] < 500 for i in range(len(diff))]
     #print(len(diff_bool))
-    return q
+    return diff
 
-# print(check_difference(dat["Consumption"], dat['Production']))
+def check_difference2(cons,prod):
+    prod = list(prod)
+    prod = [1 if x == 0 else x for x in prod]
+    cons = list(cons)
+    cons = [1 if x == 0 else x for x in cons]
+
+    diff = [prod[i+1]/prod[i] for i in range(len(prod)-1)]
+    #[(prod[i+1]/prod[i]) for i in range(len(prod)-1)]
+
+    return diff
+    
 #print(check_difference(dat["Consumption"], dat['Production']))
-print(max(check_difference(dat["Consumption"], dat['Production'])))
-print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
-print(np.median(check_difference(dat["Consumption"], dat['Production'])))
+#print(check_difference(dat["Consumption"], dat['Production']))
+# print(max(check_difference(dat["Consumption"], dat['Production'])))
+# print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
+# print(np.median(check_difference(dat["Consumption"], dat['Production'])))
 # plt.plot(check_difference(dat["Consumption"], dat['Production'])[:24])
 # plt.show()
+
+plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
+plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
+# print(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
+
+plt.show()
+max_battery = 4
+step_size = 0.5 
+#battery = [*range(0,max_battery+1,0.5)]
+battery = list(np.arange(0.0, float(max_battery) + step_size, step_size))
+# print(battery)
+# print(len(battery))
+
+def get_battery_id(battery):
+    return int(battery * 2) 
+
 

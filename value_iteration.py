@@ -37,7 +37,7 @@ class ValueIteration:
         gamma = 0.8
 
         #learning rate
-        lr = 0.4
+        lr = 0.8
 
         # initialize rewards per episode
 
@@ -52,7 +52,7 @@ class ValueIteration:
         Q_table = np.zeros((MDP.n_states, MDP.n_actions))
         
         # we initialize the first state of the episode
-        current_state = State(data["Consumption"][0], data["Production"][0], 2, data["Production"][1] ,data["Time"][0])
+        current_state = State(data["Consumption"][0], data["Production"][0], 2.0, data["Production"][1] ,data["Time"][0])
             
             
         for e in range(n_episodes):
@@ -67,25 +67,33 @@ class ValueIteration:
                 #     the agent selects arandom action
                 # else
                 #     he exploits his knowledge using the bellman equation 
-                
+                # print("time: " + str(current_state.time))
+                # print("battery: " + str(current_state.battery))
                 if np.random.uniform(0,1) < exploration_proba:
                     action = MDP.action_space[np.random.randint(0,MDP.n_actions)]
+                    #print("sampled action: " + str(action))
                 else:
                     a = Q_table[State.get_id(current_state),:]
+                    # print("row of Q-values: " +str(a))
                     action = MDP.action_space[MDP.get_best_action(a)]
+                    # print("chosen action: " + str(action))
                     # action = MDP.action_space[np.argmax(Q_table[State.get_id(current_state),:])]
                 
                 # The environment runs the chosen action and returns the next state and the reward for the action in the current state.
                 reward = State.get_reward(action, current_state)
-
+                # print("reward: " + str(reward))
                 # if i == len(data["Consumption"])-1:
                 #     next_state = State.get_next_state(current_state, action, data["Consumption"][0], data["Production"][0], data["Time"][0])
                 # else:
                 next_state = State.get_next_state(current_state, action, data["Consumption"][(i+1)%len(data["Consumption"])], data["Production"][(i+1)%len(data["Consumption"])], data["Production"][(i+2)%len(data["Consumption"])], data["Time"][(i+1)%len(data["Consumption"])])
 
-            
+                # print(current_state.consumption, current_state.production, current_state.battery, current_state.predicted_prod,current_state.time)
+                # print(next_state.consumption, next_state.production, next_state.battery, next_state.predicted_prod,next_state.time)
                 # We update our Q-table using the Q-learning iteration
-                Q_table[State.get_id(current_state), MDP.get_action_id(action)] = (1-lr) * Q_table[State.get_id(current_state), MDP.get_action_id(action)] + lr*(reward + gamma*max(Q_table[State.get_id(next_state),:]))
+                # print("first: " + str((1-lr) * Q_table[State.get_id(current_state), MDP.get_action_id(action)]))
+                # print("second: " + str(lr*(reward + gamma*max(Q_table[State.get_id(next_state),:]))))
+                Q_table[State.get_id(current_state), MDP.get_action_id(action)] = (1-lr) * Q_table[State.get_id(current_state), MDP.get_action_id(action)] + lr*(reward + gamma*max(Q_table[State.get_id(next_state),:]) - Q_table[State.get_id(current_state), MDP.get_action_id(action)])
+                # print("Q-value: " + str(Q_table[State.get_id(current_state), MDP.get_action_id(action)]))
                 total_episode_reward = total_episode_reward + reward
                 
                 all_rewards.append(reward)
@@ -110,17 +118,20 @@ class Baseline:
         states = []
         actions = []
         action_ids = []
+        battery = []
         current_state = State(data["Consumption"][0], data["Production"][0], 2,data["Production"][1], data["Time"][0])
         
         for i in range(1,len(data["Consumption"])):
             # current_state = State(data["Consumption"][i], data["Production"][i], 2, data["Time"][i])
 
-            if current_state.p > current_state.c and current_state.p - current_state.c > 1000 and current_state.battery < MDP.max_battery:
+            if current_state.p - current_state.c >= 1000 and current_state.battery < MDP.max_battery:
                 action = "charge"
-            elif current_state.p > current_state.c and current_state.c - current_state.p < 1000:
+            elif current_state.c - current_state.p < 500 and current_state.p - current_state.c < 1000:
                 action = "do nothing"
-            elif current_state.p < current_state.c and not (current_state.p - current_state.c) > 1000 and current_state.battery > 0:
-                action = "discharge"
+            elif (current_state.c - current_state.p) > 1000 and current_state.battery > 0.5:
+                action = "discharge_high"
+            elif (current_state.c - current_state.p) > 500 and current_state.battery > 0:
+                action = "discharge_low"
             else:
                 action = "do nothing"
         
@@ -128,12 +139,13 @@ class Baseline:
             states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
             actions.append(action)
             action_ids.append(MDP.get_action_id(action))
+            battery.append(current_state.battery)
             current_state = State.get_next_state(current_state, action, data["Consumption"][i], data["Production"][i],data["Production"][(i+1)%len(data["Production"])], data["Time"][i])
 
-        return rewards, states, actions, action_ids
+        return rewards, states, actions, action_ids, battery
 
 
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(data,10)
+Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = ValueIteration.value_iteration(data,50)
 
 
 
@@ -145,7 +157,9 @@ reward, applied_actions, battery_states = MDP.apply_q_table(Q_table_sol, data)
 # print(reward)
 
 # print(applied_actions)
-# plt.hist(applied_actions)
+
+plt.hist(applied_actions)
+plt.show()
 # plt.show()
 # print(MDP.get_total_costs(reward))
 # print(len(applied_actions))
@@ -157,9 +171,10 @@ reward, applied_actions, battery_states = MDP.apply_q_table(Q_table_sol, data)
 # # plt.plot(applied_actions)
 # plt.show()
 # print(Q_table_sol)
-plt.hist(battery_states)
-plt.show()
+# plt.plot(battery_states[:240])
+# plt.show()
 
+# print(battery_states)
 ## APPLIED ACTIONS
 def analyse_actions(applied_actions):
     l = int(np.ceil(len(applied_actions)/24))
@@ -177,8 +192,8 @@ def analyse_actions(applied_actions):
 # ################## REWARDS #################################
 #plt.plot(rewards_per_episode)
 rewards = [x/len(data["Purchased"]) for x in rewards_per_episode]
-# plt.plot(rewards)
-# plt.show()
+plt.plot(rewards)
+plt.show()
 # print(all_rewards)
 # print(rewards)
 
@@ -196,8 +211,9 @@ rewards = [x/len(data["Purchased"]) for x in rewards_per_episode]
 
 ############## BATTERY #################################
 
-# plt.hist(battery)
-# plt.show()
+plt.plot(battery[:240])
+plt.show()
+
 ################## STATES #################################  
 # print(states[:1000])
 # print(len(states))
@@ -205,12 +221,16 @@ rewards = [x/len(data["Purchased"]) for x in rewards_per_episode]
 #plt.show()
 
 ################ BASELINE TESTING ##########################
-baseline_rewards, baseline_states, baseline_actions, baseline_ids= Baseline.test(data)
+baseline_rewards, baseline_states, baseline_actions, baseline_ids, baseline_bat= Baseline.test(data)
 # print("baseline: ")
 # print(baseline_rewards)
 # print(MDP.get_total_costs(baseline_rewards))
 # # print(baseline_states)
-
+# print(baseline_ids)
+# print(baseline_actions.count("do nothing"))
+# plt.hist(baseline_bat)
+# plt.show()
+#  print(MDP.get_total_costs(baseline_rewards))
 # actions_id = [MDP.get_action_id(x) for x in baseline_actions]
 # print(actions_id)
 
