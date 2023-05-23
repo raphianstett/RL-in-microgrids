@@ -26,9 +26,9 @@ class MDP:
 
     # bins: [0.  217.  266.  339.  424. 2817.]
     def get_consumption(p):
-        prod = ["very low", "low", "average", "high", "very high"]
+        cons = ["very low", "low", "average", "high", "very high"]
         intervals = [pd.Interval(left = 0, right = 215, closed = 'both'),pd.Interval(left = 215,right = 270, closed = 'right'), pd.Interval(left = 270,right =  340, closed = 'right'), pd.Interval(left = 340,right =  430, closed = 'right'), pd.Interval(left = 430,right =  2900, closed = 'right')]
-        return prod[0] if p in intervals[0] else (prod[1] if p in intervals[1] else (prod[2] if p in intervals[2] else (prod[3] if p in intervals[3] else prod[4]))) 
+        return cons[0] if p in intervals[0] else (cons[1] if p in intervals[1] else (cons[2] if p in intervals[2] else (cons[3] if p in intervals[3] else cons[4]))) 
 
     # def get_consumption
 
@@ -49,7 +49,7 @@ class MDP:
         return int(rand * p) 
     
     # function to return action_id with largest Q-value (!=0)
-    # returns 1 (do nothing), if all q-values are the same
+    # returns 2 (do nothing), if all q-values are the same
     
     def get_best_action(q_values):
         q_values[q_values == 0] = min(q_values)
@@ -81,7 +81,7 @@ class MDP:
     n_states = n_consumption * n_production * n_battery * n_time * n_pred_production
     
     # action space  
-    action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge"]
+    action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge_high"]
     n_actions = len(action_space)
     max_discharge = 1000
     discharge_low = 500
@@ -157,7 +157,7 @@ class State:
             next_battery = self.battery - 1.0
         elif action == "discharge_low" and self.battery > 0:
             next_battery = self.battery - MDP.step_size
-        elif action == "charge" and self.battery <= MDP.max_battery - 1:
+        elif action == "charge_high" and self.battery <= MDP.max_battery - 1:
             next_battery = self.battery + 1.0
         elif action == "charge_low" and self.battery < MDP.max_battery:
             next_battery = self.battery + MDP.step_size
@@ -191,45 +191,49 @@ class State:
 
         # max_loss if action not possible, else calculate reward as squared difference between production and consumption
         # based on chosen action 
-        if action == 'charge':
+        if action == 'charge_high':
             
             if state.battery >= MDP.max_battery - MDP.step_size or (state.p - state.c) < MDP.max_charge :
                 return MDP.max_loss 
             else:
-                return  -((MDP.max_battery+state.battery) / MDP.max_battery)*(state.p - (MDP.max_charge + state.c))**2
+                #((MDP.max_battery+state.battery) / MDP.max_battery)*
+                return  -(state.p - (MDP.max_charge + state.c))**2
         if action == 'charge_low':
             if state.battery == MDP.max_battery or state.p - state.c < MDP.charge_low:
                 return MDP.max_loss
             else:
-                return -((MDP.max_battery+state.battery) / MDP.max_battery)*(state.p - (MDP.charge_low + state.c))**2
+                # ((MDP.max_battery+state.battery) / MDP.max_battery)*
+                return -(state.p - (MDP.charge_low + state.c))**2
         if action == "discharge_high" :
             #if state.p > state.c or state.battery == 0:
             if state.battery < 1.0:
                 return MDP.max_loss
             else:
                 # discharging is also good, if next production is larger than current
-                return -(MDP.max_battery / (state.battery + MDP.max_battery))*((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
+                #(MDP.max_battery / (state.battery + MDP.max_battery))
+                return -((state.p + MDP.max_discharge)  - state.c)**2 #if (state.p + MDP.max_discharge) < state.c else 0
         if action == 'discharge_low':
             if state.battery < 0.5:
                 return MDP.max_loss
             else:
                 # discharging is also good, if next production is larger than current
-                return -(MDP.max_battery / (state.battery + MDP.max_battery))*((state.p + MDP.discharge_low)  - state.c)**2
+                #(MDP.max_battery / (state.battery + MDP.max_battery))
+                return -((state.p + MDP.discharge_low)  - state.c)**2
         if action == "do nothing":
             # punish not doing something, if possible and reasonable
             # if state.p - state.c > 1000 and state.battery < MDP.max_battery or state.c - state.p >= 1000 and state.battery > 0:
             #     return MDP.max_loss
             #else:
-            return -max((MDP.max_battery / (state.battery + MDP.max_battery)), (state.battery + MDP.max_battery / (MDP.max_battery)))\
-                *(state.p - state.c)**2 
+            # max((MDP.max_battery / (state.battery + MDP.max_battery)), (state.battery + MDP.max_battery / (MDP.max_battery)))\
+            return -(state.p - state.c)**2 
 
      
         
     def get_cost(action, state):
-        if action == "charge" and state.battery == MDP.max_battery or action == "discharge" and state.battery < 1.0 or action == "discharge_low" and state.battery < 0.5:
+        if action == "charge_high" and state.battery == MDP.max_battery or action == "discharge" and state.battery < 1.0 or action == "discharge_low" and state.battery < 0.5:
             # return state.p - state.c
             return -10000
-        if action == "charge":
+        if action == "charge_high":
             #return (state.p - (state.c + MDP.max_charge)) if (state.p < state.c + MDP.max_charge) else 0
             return (state.p - (state.c + MDP.max_charge)) if (state.p < state.c + MDP.max_charge) else 0
         
