@@ -76,6 +76,11 @@ class Environment:
     def get_battery_id(battery):
         return int(battery * 2) 
     
+    ### TO IMPLEMENT ###
+    def apply_q_table(q_table, dat):
+        return 0
+
+
 class State:
     def __init__(self, c1, c2, p1, p2, battery_1, battery_2, p_next_1, p_next_2, time):
         self.consumption_1 = Environment.get_consumption(c1)
@@ -119,8 +124,101 @@ class State:
             next_battery = battery
         return next_battery
 
+    def get_id(state):
+        # consumption_1
+        c1 = 0 if (state.consumption_1 == "very low") else (1 if (state.consumption_1 == "low") else (2 if (state.consumption_1 == "average") else (3 if (state.consumption_1 == "high") else 4)))
+        # consumption_2
+        c2 = 0 if (state.consumption_2 == "very low") else (1 if (state.consumption_2 == "low") else (2 if (state.consumption_2 == "average") else (3 if (state.consumption_2 == "high") else 4)))
+        
+        idx_c = c1 * ((Environment.n_consumption/2) * Environment.n_production*Environment.n_battery*Environment.n_pred_production*24) + c2 * (Environment.n_production*Environment.n_battery*Environment.n_pred_production*24)
+        # production_1
+        p1 = 0 if (state.production_1 == "none") else (1 if (state.production_1 == "low") else (2 if (state.production_1 == "average") else (3 if (state.production_1 == "high") else 4)))
+         # production_2
+        p2 = 0 if (state.production_2 == "none") else (1 if (state.production_2 == "low") else (2 if (state.production_2 == "average") else (3 if (state.production_2 == "high") else 4)))
+        idx_p = p1 *((Environment.n_production /2) * Environment.n_battery*Environment.n_pred_production*24) + p2 *(Environment.n_battery*Environment.n_pred_production*24)
+        # battery
+        idx_b = Environment.get_battery_id(state.battery_1) * (Environment.max_battery_2 * Environment.n_pred_production*24) + Environment.get_battery_id(state.battery_2) * (Environment.n_pred_production*24)
+        # predicted production
+        pred1 = 0 if (state.predicted_prod_1 == "none") else (1 if (state.predicted_prod_1 == "low") else (2 if (state.predicted_prod_1 == "average") else (3 if (state.predicted_prod_1 == "high") else 4)))
+        pred2 = 0 if (state.predicted_prod_2 == "none") else (1 if (state.predicted_prod_2 == "low") else (2 if (state.predicted_prod_2 == "average") else (3 if (state.predicted_prod_2 == "high") else 4)))
+        idx_pred = pred1 * ((Environment.n_pred_production/2) * 24) + pred2 * 24
+
+        return idx_c + idx_p + idx_b + idx_pred + state.time
     
+    # returns false if action not allowed
+    def check_actions(action1, action2, state):
+        bool_a1 = True
+        if action1 == 'charge_high' and state.battery_1 >= Environment.max_battery_1 - Environment.step_size or (state.p1 - state.c1) < Environment.max_charge:
+            bool_a1 = False
+        if action2 == 'charge_high' and state.battery_2 >= Environment.max_battery_2 - Environment.step_size or (state.p2 - state.c2) < Environment.max_charge:
+            bool_a2 = False
+        if action1 == 'charge_low' and state.battery_1 == Environment.max_battery_1 or state.p1 - state.c1 < Environment.charge_low:
+            bool_a1 = False
+        if action2 == 'charge_low' and state.battery_2 == Environment.max_battery_2 or state.p2 - state.c2 < Environment.charge_low:
+            bool_a2 = False
+        if action1 == 'discharge_high' and state.battery_1 < 1.0:
+            bool_a1 = False
+        if action2 == 'discharge_high' and state.battery_2 < 1.0:
+            bool_a2 = False
+        if action1 == 'discharge_low' and state.battery_1 < 0.5:
+            bool_a1 = False
+        if action2 == 'discharge_low' and state.battery_2 < 0.5:
+            bool_a2 = False
+        if action1 == 'give' and state.p1 < state.c1:
+            bool_a1 = False
+        if action2 == 'give' and state.p2 < state.c2:
+            bool_a2 = False
+        if action1 == 'take' and state.p1 > state.c1:
+            bool_a1 = False
+        if action2 == 'take' and state.p2 > state.c2:
+            bool_a2 = False
+        return (bool_a1 and bool_a2)
+        
+    def apply_actions(action1, action2, state):
+        if action1 == 'charge_high':
+            demand_1 = state.c1 + Environment.max_charge
+        if action2 == 'charge_high':
+            demand_2 = state.c2 + Environment.max_charge
+        if action1 == 'charge_low':
+            demand_1 = state.c1 + Environment.charge_low
+        if action2 == 'charge_low':
+            demand_2 = state.c2 + Environment.charge_low
+        if action1 == 'discharge_high':
+            production_1 = state.p1 + Environment.max_discharge
+        if action2 == 'discharge_high':
+            production_2 = state.p2 + Environment.max_discharge
+        if action1 == 'discharge_low':
+            production_1 = state.p1 + Environment.discharge_low
+        if action2 == 'discharge_low':
+            production_2 = state.p2 + Environment.discharge_low
+        if action1 == 'give':
+            production_2 = state.p2 + Environment.max_charge
+            demand_1 = state.c1 + Environment.max_discharge
+        if action2 == 'give':
+            production_1 = state.p1 + Environment.max_charge
+            demand_2 = state.c2 + Environment.max_discharge
+        if action1 == 'take':
+            production_1 = state.p1 + Environment.max_charge
+            demand_2 = state.c2 + Environment.max_discharge
+        if action2 == 'take':
+            production_2 = state.p2 + Environment.max_charge
+            demand_1 = state.c1 + Environment.max_discharge
+        return production_1, production_2, demand_1, demand_2
+       
+
+    def get_reward(action1, action2, state):
+        if State.check_actions(action1, action2, state):
+            return Environment.max_loss
+        production_1, production_2, demand_1, demand_2 = State.apply_actions(action1, action2, state)
+        
+        return -((production_1 + production_2) - (demand_1 + demand_2))**2
     
+    def get_costs(action1, action2, state):
+        if State.check_actions(action1, action2, state):
+            return -10000
+        
+        production_1, production_2, demand_1, demand_2 = State.apply_actions(action1, action2, state)
+        return min((production_1 + production_2 - (demand_1 + demand_2)), 0)
         
 
 
