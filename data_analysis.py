@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 
 
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+
 dat = pd.read_csv('household_with_pv.csv', delimiter=";")
 
 
@@ -140,20 +143,46 @@ def changes():
 
 ## Binning for finer discretization
 
-dat_prod = dat[['Production', 'Time']]
+# dat_prod = dat[['Production', 'Time']]
 
-# labels = ['none', 'low' 'average', 'high', 'very high']
+# labels = ['none', 'low', 'average', 'high', 'very high']
 # dat['bin_qcut'] = pd.qcut(dat['Production'], q=5, precision=1, labels=labels)
-# dat['bin_qcut'] = 
+
+cons = np.array(dat["Consumption"])
+cons.sort()
+split_points = np.array_split(cons, 10)
+bins_cons = [[]]
+bins_cons.extend(split_points)
+#print(split_points)
+# print(bins_cons)
+bin_edges = [split_points[i][0] for i in range(10)]
+#print(bin_edges)
+
 # print(prod_nonzeros)
 nonzeros = np.array(prod_nonzeros)
+nonzeros.sort()
+split_points = np.array_split(nonzeros, 9)
 
-# hist, edges = np.histogram(nonzeros, bins = 5)
+
+# Create 7 bins where the first bin contains only zeros
+bins = [[]]
+bins.extend(split_points)
+
+# Add the zero values to the first bin
+bins[0] = [0] * (4444 - 1)
+bin_edges = [bins[i][0] for i in range(10)]
+# print(bin_edges)
+# print(bins)
+# Output the bins
+# for i, bin_values in enumerate(bins):
+#     print(f"Bin {i + 1}: {bin_values}")
+
+# hist, edges = np.histogram(nonzeros, bins = 6)
 # print(edges)
-# # print(hist)
-# # plt.stairs(hist, edges)
+# print(hist)
+# plt.stairs(hist, edges)
 # print(np.flip(hist))
-# plt.hist(nonzeros, bins = np.flip(hist))
+#plt.hist(nonzeros, bins = hist)
 # plt.show()
 
 prod = dat['Production']
@@ -181,10 +210,12 @@ def check_difference(cons, prod):
     #for i in range(len(cons)):
         # diff = max((prod[i] / cons[i]),(cons[i]/ prod[i])) if (prod[i] != 0 and cons[i] != 0) else 1
         # q[i] = quot
+    
     diff = [prod[i] - cons[i] for i in range(len(prod))]
-    diff_bool = [diff[i] > 200 and diff[i] < 500 for i in range(len(diff))]
+    diff_bool = [diff[i] < -200   for i in range(len(diff))]
     #print(len(diff_bool))
-    return diff
+    
+    return diff_bool
 
 def check_difference2(cons,prod):
     prod = list(prod)
@@ -196,8 +227,9 @@ def check_difference2(cons,prod):
     #[(prod[i+1]/prod[i]) for i in range(len(prod)-1)]
 
     return diff
-    
-#print(check_difference(dat["Consumption"], dat['Production']))
+
+b = check_difference(dat["Consumption"], dat['Production'])
+# print(b.count(True))
 #print(check_difference(dat["Consumption"], dat['Production']))
 # print(max(check_difference(dat["Consumption"], dat['Production'])))
 # print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
@@ -205,11 +237,11 @@ def check_difference2(cons,prod):
 # plt.plot(check_difference(dat["Consumption"], dat['Production'])[:24])
 # plt.show()
 
-plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
-plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
-# print(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
+# plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
+# plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
+# # print(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
 
-plt.show()
+# plt.show()
 max_battery = 4
 step_size = 0.5 
 #battery = [*range(0,max_battery+1,0.5)]
@@ -220,4 +252,56 @@ battery = list(np.arange(0.0, float(max_battery) + step_size, step_size))
 def get_battery_id(battery):
     return int(battery * 2) 
 
+## Plotting data exemplary
+# print(len(dat["Consumption"]))
 
+
+hours = np.arange(500, 741)  # Assuming each value represents a day
+days = (hours - 500) / 24  # Convert days to hours
+x_ticks = days
+x_ticklabels = hours
+
+plt.rcParams["font.size"] = 12
+plt.rcParams["font.family"] = "Arial"
+
+plt.figure(figsize=(10, 5))
+
+plt.plot(dat["Consumption"][0:168], color="red", linestyle="-", label="Demand")
+plt.plot(dat["Production"][0:168], color="green", linestyle="dashdot", label="Production")
+
+plt.xlabel("Days")
+plt.xticks([], [])
+plt.ylabel("Value in Wh")
+plt.title("Demand and Production")
+plt.legend()
+
+# plt.show()
+## figure to compare cases in data and in baseline
+# charge_high, charge_low, nothing, discharge_low, discharge_high
+in_data = [2028, 447, 741, 5487, 60]
+in_baseline = [1354, 461, 3793, 3138, 13]
+
+num_bins = min(len(in_data), len(in_baseline))
+
+# Set the bar width for each pairwise value
+bar_width = 0.35
+
+# Calculate the x-axis positions for the bars
+x = range(num_bins)
+
+# Plot the histogram
+fig, ax = plt.subplots()
+rects1 = ax.bar(x, in_data[:num_bins], bar_width, color='blue', label='in_data')
+rects2 = ax.bar([i + bar_width for i in x], in_baseline[:num_bins], bar_width, color='orange', label='in_baseline')
+
+# Add labels, title, and legend
+ax.set_xlabel('Actions')
+ax.set_ylabel('Value')
+ax.set_title('Histogram of Pairwise Values')
+ax.set_xticks([i + bar_width/2 for i in x])
+ax.set_xticklabels(x)
+ax.legend()
+#plt.show()
+
+print(np.median(dat["Production"]))
+# print(dat["Date"][5880:6048])

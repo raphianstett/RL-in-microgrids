@@ -3,25 +3,33 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 class Data:
-    def get_data():
+    def get_data(self):
+        dat = pd.read_csv("MA_data.csv")
+        dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'is weekend': dat["is_weekend"], 'Time': dat["Time"]}
+        dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Production_A','Production_B', 'is_weekend', 'Time'])        
+        return dat
+    
+    def write_data(self):
         df = RealData.get_real_data()
-        df["Consumption_B"] = Data.add_noise(Data.shuffle_consumption(df), 0.1)
-        # print(df[:10])
-        df["Production_B"] = Data.scale_production(df["Production"], 0.8)
+        df["Consumption_B"] = self.add_noise(self.shuffle_consumption(df), 0.1)
+        
+        df["Production_B"] = self.scale_production(df["Production"], 0.8)
         df = df.rename(columns = {"Consumption" : "Consumption_A", "Production" : "Production_A"})
-        # # print(df)
+        
         df = df[["Consumption_A", "Consumption_B", "Production_A", "Production_B", "is_weekend", "Time"]]
+        df.to_csv("MA_data.csv")
+        # return df
 
-
-    def get_days():
+    def get_days(self):
         start_date = '2021-06-01'
         end_date = '2022-05-31'
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         
         return date_range
 
-    def get_weekend(dates):
+    def get_weekend(self,dates):
         is_weekend = [None]*365
         for i in range(len(dates)):
             if dates[i].weekday() < 5:  # 0-4 represents Monday to Friday (weekday)
@@ -30,11 +38,11 @@ class Data:
                 is_weekend[i] = 1
         return is_weekend
 
-    def shuffle_days():
-        dates = Data.get_days()
+    def shuffle_days(self):
+        dates = self.get_days()
         
-        df = pd.DataFrame({"Date" : dates, "is weekend": Data.get_weekend(dates)})
-        is_weekend = Data.get_weekend(dates)
+        df = pd.DataFrame({"Date" : dates, "is weekend": self.get_weekend(dates)})
+        is_weekend = self.get_weekend(dates)
         weekdays_df = df[df['Date'].apply(lambda x: x.weekday() < 5)]
         weekends_df = df[df['Date'].apply(lambda x: x.weekday() >= 5)]
         
@@ -64,16 +72,16 @@ class Data:
         shuffled_dates.reset_index(drop = True)
         return shuffled_dates
 
-    def shuffle_consumption(df):
-        shuffled_dates = Data.shuffle_days()
-        print(df[:12])
+    def shuffle_consumption(self,df):
+        shuffled_dates = self.shuffle_days()
+       
         df_copy = df.copy()
 
         # shuffled_dates.set_index("Date", inplace = True)
         # print(shuffled_dates)
         df_copy.set_index("Date", inplace = True)
-        print(df_copy[:14])
-        print(df[:13])
+        
+        
         # print(df)
 
         shuffled_cons = pd.DataFrame(columns = ["Consumption", "Production", "Time", "Purchased", "is_weekend"])
@@ -89,7 +97,7 @@ class Data:
 
     # print(shuffle_consumption(df))
 
-    def add_noise(vec,std):
+    def add_noise(self,vec,std):
         mean = 1
         vec = list(vec)
         for x in vec:
@@ -97,13 +105,13 @@ class Data:
             x *= noise  
         return vec
 
-    def scale_production(prod, scaling):
-        prod = [x * scaling for x in prod]
+    def scale_production(self,prod, scaling):
+        prod = [np.floor(x * scaling) for x in prod]
         return prod
 
 
     
-    def print_data(df):
+    def plot_data(self,df):
         hours = np.arange(500, 741)  # Assuming each value represents a day
         days = (hours - 500) / 24  # Convert days to hours
         x_ticks = days
@@ -124,5 +132,3 @@ class Data:
         plt.legend()
 
         plt.show()
-
-

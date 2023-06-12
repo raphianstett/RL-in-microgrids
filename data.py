@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime
 
+
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 np.set_printoptions(threshold=np.inf)
 
@@ -44,7 +48,7 @@ class StepFunctions:
     def get_test_data():
         d = {'Consumption': StepFunctions.generate_step_consumption(), 'Production': StepFunctions.generate_step_production(), 'Time': [*range(0,24,1)]}
         dat = pd.DataFrame(d, columns = ['Consumption', 'Production', 'Time'])
-
+        
         # data checking
 
         prod = dat["Production"]
@@ -57,10 +61,20 @@ class RealData:
         
         dat = {'Consumption': dat["Consumption"], 'Production': dat["Production"], 'Time': dat["Time"], 'Date': dat["Date"], 'Purchased': dat["Purchased"]}
         dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Time', 'Date', 'Purchased'])
-
+        dat['Date'] = pd.to_datetime(dat['Date'])
+        dat = RealData.mark_weekend_days(dat)
         return dat
     
-    def split_data(data, days): 
+    def cut_production(df):
+        prod = df["Production"]
+        df["Production"] = [min(x, 4000) for x in prod]
+        return df
+
+    def mark_weekend_days(df):
+        df['is_weekend'] = df['Date'].apply(lambda x: int(x.weekday() >= 5))
+        return df
+
+    def split_data_test(data, days): 
         test_data = pd.DataFrame(columns = ['Consumption','Production', 'Time','Date','Purchased'], index = range(0,12*days*24))
         days_in_month = np.array([30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30, 31])
         for i in range(12):
@@ -78,6 +92,25 @@ class RealData:
             data = data.set_axis(range(0, len(data)), axis = 'index')
             test_data = test_data.set_axis(range(0, len(test_data)), axis = 'index')    
         return data, test_data
+
+    def extract_days(group, days):
+        return group.head(days)
+
+    def split_data(df, days):
+        df['Date'] = pd.to_datetime(df['Date'])
+        grouped = df.groupby(df['Date'].dt.to_period('M'))
+        n = days * 24
+        new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
+        new_df = new_df.reset_index(drop=True)
+
+        # Remove the extracted rows from the original DataFrame
+        df = df.drop(new_df.index)
+
+        # Reset the index of the updated DataFrame
+        df = df.reset_index(drop=True)
+        return df, new_df
+
+   
 
     def equalObs(x, nbin):
         nlen = len(x)
@@ -98,13 +131,16 @@ class RealData:
             else: 
                 continue
         return p
-         
+    def get_summer(df):
+        return df.drop(range(2930, 7298))
+    def get_winter(df):
+        df = df.drop(range(0,2929))
+        df = df.drop(range(7299), len(df))
+        return df
+
 # month * days * hours
-d = RealData.get_real_data()
-# print()
+training_data, test = RealData.split_data(RealData.get_real_data(), 7)
+# print(training_data)
+# print(training_data["Production"] - training_data["Consumption"])
 
-# print(d["Purchased"].sum()) 
-# = 1697651.0
 
-# training_data, test_data = RealData.split_data(d, 7)
-# print(training_data, test_data)

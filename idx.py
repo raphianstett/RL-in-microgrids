@@ -1,16 +1,16 @@
 import numpy as np
-import MDP 
-from MDP import State
+import environment 
+from environment import State
 import data_analysis
 import pandas as pd
 
 x = 3*3*5*24
 list = [0]*x
 
-c = MDP.consumption
-p = MDP.production
-b = MDP.battery
-t = MDP.time
+c = environment.consumption
+p = environment.production
+b = environment.battery
+t = environment.time
 
 #print(c, p, b, t)
 
