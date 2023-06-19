@@ -61,6 +61,11 @@ idx_p_half = round(zeros + ((len(prod) - zeros) / 2))
 
 prod_nonzeros = prod[4444:]
 
+low = min(prod_nonzeros)
+high = max(prod_nonzeros)
+n = int((high- low)/6)
+intervals = [0, low, low + n, low + 2*n, low + 3*n, low + 4*n, low + 5*n, low + 6*n]
+print(intervals)
 # print(dat)
 # print(cons)
 
@@ -185,7 +190,14 @@ bin_edges = [bins[i][0] for i in range(10)]
 #plt.hist(nonzeros, bins = hist)
 # plt.show()
 
-prod = dat['Production']
+# prod = np.sort(dat['Consumption'])
+# n = int(max(prod) / 7) 
+# print(n)
+# steps = [0, n, 2*n, 3*n, 4*n, 5*n, 6*n, 7*n]
+# print(steps)
+# intervals = [0, n, 2*n, 3*n, 4*n, 5*n, 6*n, 7*n]
+# # intervals = [prod[0], prod[n], prod[2*n], prod[3*n], prod[4*n], prod[5*n], prod[6*n], prod[7*n]]
+# print(intervals)
 
 def check_prediction(prod):
     x = []
@@ -215,7 +227,7 @@ def check_difference(cons, prod):
     diff_bool = [diff[i] < -200   for i in range(len(diff))]
     #print(len(diff_bool))
     
-    return diff_bool
+    return diff
 
 def check_difference2(cons,prod):
     prod = list(prod)
@@ -229,13 +241,30 @@ def check_difference2(cons,prod):
     return diff
 
 b = check_difference(dat["Consumption"], dat['Production'])
+print("mean")
+print(np.mean(b))
+print(np.median(b))
+print("max and min: ")
+print(max(b))
+print(min(b))
+
+d = np.sort(b)
+# n = int(len(b) / 10) 
+n = int((max(b) - min(b)) / 10)
+m = min(b)
+print((max(b) - min(b)))
+print(n)
+steps = [m + 0*n ,m + n,m + 2*n,m + 3*n,m + 4*n,m + 5*n,m + 6*n,m + 7*n,m + 8*n, m + 9*n, m + 10*n]
+print(steps)
+intervals = [d[0], d[n], d[2*n], d[3*n], d[4*n], d[5*n], d[6*n], d[7*n], d[8*n], d[9*n], d[10*n - 1]]
+print(intervals)
 # print(b.count(True))
 #print(check_difference(dat["Consumption"], dat['Production']))
 # print(max(check_difference(dat["Consumption"], dat['Production'])))
 # print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
 # print(np.median(check_difference(dat["Consumption"], dat['Production'])))
-# plt.plot(check_difference(dat["Consumption"], dat['Production'])[:24])
-# plt.show()
+plt.plot(check_difference(dat["Consumption"], dat['Production'])[:240])
+plt.show()
 
 # plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
 # plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
@@ -305,3 +334,4 @@ ax.legend()
 
 print(np.median(dat["Production"]))
 # print(dat["Date"][5880:6048])
+

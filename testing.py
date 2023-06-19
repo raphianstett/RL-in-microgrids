@@ -1,13 +1,17 @@
 from learning import QLearning
 from learning import Baseline
+from learning_with_diff import QLearning as QLearning_d
 from environment import MDP
 from environment import State
+from environment_with_diff import MDP as dMDP
+from environment_with_diff import State as dState
+
 from data import StepFunctions
 from data import RealData
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+from collections import Counter
 
 def test_exploration(i):
     exp = [0]*i
@@ -27,17 +31,20 @@ dat_test = StepFunctions.get_test_data()
 
 # import real data
 data = RealData.get_real_data()
-training_data, test_data = RealData.split_data(data, 7)
-
+summer_data = RealData.get_summer(data)
+training_data, test_data = RealData.split_data(summer_data, 7)
 
 # initialize MDP
 # MDP(max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_cons, bins_prod)
 
 mdp_3 = MDP(1000, 1000, 500, 500, 6, 3,3)
 mdp_5 = MDP(1000, 1000, 500, 500, 6, 5,5)
-mdp_7 = MDP(1000, 1000, 500, 500, 6, 7,7)
-mdp_10 = MDP(1000, 1000, 500, 500, 6, 10,10)
-mdp = mdp_5
+mdp_7 = MDP(2000, 500, 200, 200, 60, 7,7)
+mdp_10 = MDP(1000, 500, 200, 500, 40, 10,10)
+mdp = mdp_10
+mdp_d = dMDP(1000, 500, 200, 500, 40, 10, 10)
+
+
 
 ### TEST BINNING IN RL CONVERGENCE ###
 
@@ -213,7 +220,7 @@ def compare_actions_hist(mdp):
 #plt.show()
 
 ################ BASELINE TESTING ##########################
-baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(training_data, mdp)
+baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
 
 # plt.show()
 # plt.hist(baseline_actions)
@@ -229,7 +236,9 @@ baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= B
 # print("baseline: ")
 # print(baseline_rewards)
 # print(MDP.get_total_costs(baseline_rewards))
-# print(baseline_states)
+unique = set(baseline_states)
+print(len(unique))
+# print(baseline_states.count())
 # print(baseline_ids)
 # print(baseline_actions.count("do nothing"))
 
@@ -249,33 +258,62 @@ baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= B
 # print()
 # print(diff)
 # print(np.sum(diff))
-Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,100, mdp)
+Q2, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning_d.iterate(training_data,800, mdp_d)
 
-reward, applied_actions, battery_states, dis = MDP.find_policy(mdp, Q_table_sol, training_data)
+reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
 
-print("Q-Learning: " + str(np.sum(reward)))
+
+Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,800, mdp)
+
+reward1, policy1, battery_states1, dis, loss, visited_states = mdp.find_policy(Q1, test_data)
+
+
+print("Q-Learning normal: " + str(np.sum(reward1)))
+print("Q-Learning with difference: " + str(np.sum(reward2)))
+
 print("Baseline:   " + str(np.sum(baseline_rewards)))
-print("without battery: " + str(mdp.get_total_costs(training_data["Production"] - training_data["Consumption"])))
-# print("without battery: " + str(mdp.get_total_costs(dat_test["Production"] - dat_test["Consumption"])))
+print("without battery: " + str(mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])))
 
 # diff = [data["Purchased"][i] + reward[i] for i in range(len(reward))]
 # print("diff: " + str(diff))
 # print(len(reward))
 # print(len(data["Purchased"]))
 # plot_batteries(0,240,battery_states, baseline_bat)
-print("amount discharged: " + str(dis))
-print(applied_actions)
+print("amount discharged 1: " + str(dis))
+print("amount discharged2 : " + str(dis2))
 
-plt.plot(rewards_per_episode)
-plt.show()
-cons = training_data["Consumption"]
+# print("amount wasted when discharging" + str(loss))
+# print(applied_actions)
+
+# plt.plot(rewards_per_episode)
+# plt.show()
+cons = test_data["Consumption"]
 scaled_cons = [x/100 for x in cons]
-prod = training_data["Production"]
+prod = test_data["Production"]
 scaled_prod = [x/100 for x in prod]
 
 
-plt.plot(battery_states[0:240], color = "red")
-plt.plot(scaled_cons[0:240], color = "green")
-plt.plot(scaled_prod[0:240], color = "yellow")
+# plt.plot(battery_states1[:186], color = "red")
+# plt.plot(scaled_cons[1000:1240], color = "green")
+# plt.plot(scaled_prod[1000:1240], color = "yellow")
+# plt.show()
+plt.plot(battery_states1[:186], color = "red")
+plt.plot(battery_states2[:186], color = "green")
+plt.plot(baseline_bat[:186], color = "black")
 plt.show()
-
+plt.hist(policy1, color = "red")
+plt.plot()
+plt.hist(policy2, color = "green")
+plt.show()
+def data_to_states(mdp, data):
+    states = []
+    for i in range(len(data)-1):
+        #print(MDP.get_production(data["Production"][i]))
+        # data["Consumption"][i], data["Production"][i], , data["Time"][i]
+        states.append((mdp.get_consumption(data["Consumption"][i]), mdp.get_production(data["Production"][i]),mdp.get_production(data["Production"][i+1]), data["Time"][i]))
+        # print(data["Consumption"][i])
+        # print(State(data["Consumption"][i], data["Production"][i], 2, data["Production"][i+1],data["Time"][i]).consumption)
+    # return states   
+    return Counter(states)
+# print(len(Counter(baseline_states)))
+#print(baseline_states[:100])

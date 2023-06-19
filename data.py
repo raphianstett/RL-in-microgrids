@@ -58,7 +58,6 @@ class StepFunctions:
 class RealData:
     def get_real_data():
         dat = pd.read_csv("household_with_pv_new.csv")
-        
         dat = {'Consumption': dat["Consumption"], 'Production': dat["Production"], 'Time': dat["Time"], 'Date': dat["Date"], 'Purchased': dat["Purchased"]}
         dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Time', 'Date', 'Purchased'])
         dat['Date'] = pd.to_datetime(dat['Date'])
@@ -132,15 +131,20 @@ class RealData:
                 continue
         return p
     def get_summer(df):
-        return df.drop(range(2930, 7298))
+        df.drop(df.index[2928:7298], inplace=True)
+        df.reset_index(drop = True, inplace = True)
+        return df
+    
     def get_winter(df):
-        df = df.drop(range(0,2929))
-        df = df.drop(range(7299), len(df))
+        df.drop(range(0,2928), inplace = True)
+        df.drop(range(7299), len(df))
+        df.reset_index(drop = True, inplace = True)
         return df
 
 # month * days * hours
 training_data, test = RealData.split_data(RealData.get_real_data(), 7)
 # print(training_data)
 # print(training_data["Production"] - training_data["Consumption"])
-
+data = RealData.get_real_data()
+# print(RealData.get_summer(data)[:6000])
 

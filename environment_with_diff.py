@@ -15,16 +15,16 @@ from decimal import Decimal
 
 class MDP:
     # initialize MDP
-    def __init__(self, max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_cons, bins_prod):
+    def __init__(self, max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_d, bins_prod):
         
 
-        self.bins_cons = bins_cons
-        consumption_discr = [["low", "average", "high"],
-                            ["very low", "low", "average", "high", "very high"],
-                            ["low", "very low", "low", "moderately low" "average", "moderalety high", "high", "very high"],
-                            ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]]
-        idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
-        self.consumption = consumption_discr[idx_c]
+        self.bins_d = bins_d
+        # consumption_discr = [["low", "average", "high"],
+        #                     ["very low", "low", "average", "high", "very high"],
+        #                     ["low", "very low", "low", "moderately low" "average", "moderalety high", "high", "very high"],
+        #                     ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]]
+        # idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
+        # self.consumption = consumption_discr[idx_c]
         
         self.bins_prod = bins_prod
         production_discr = [["low","average", "high"],
@@ -33,7 +33,9 @@ class MDP:
                             ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]]
         idx_p = int(np.floor(self.bins_prod/2) - 1) if self.bins_prod != 10 else 3
         self.production = production_discr[idx_p]
-        
+        self.difference = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500"]
+
+
         # time
         self.time = [*range(0,24,1)]
 
@@ -53,13 +55,14 @@ class MDP:
         self.step_low_discharge = int(discharge_low / 100)
 
         # dimensions
-        self.n_consumption = len(self.consumption)
-        self.n_production = len(self.production)
+        # self.n_consumption = len(self.consumption)
+        # self.n_production = len(self.production)
+        self.n_diff = len(self.difference)
         self.n_pred_production = len(self.production)
         self.n_battery = self.max_battery * 10 + 1
 
         self.n_time = len(self.time)
-        self.n_states = self.n_consumption * self.n_production * self.n_battery * self.n_time * self.n_pred_production
+        self.n_states = self.n_diff * self.n_battery * self.n_time * self.n_pred_production
         
 
 
@@ -72,46 +75,23 @@ class MDP:
     # reward function
     max_loss = -999999999999999999
 
+
+
+    ## getters for discretization of difference
+    def get_difference_ten(self,d):
+        # bins = [-1947.0, -1268.0, -589.0, 90.0, 769.0, 1448.0, 2127.0, 2806.0, 3485.0, 4164.0, 4850.0]
+        bins = [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000,2500, 3000,3500, 4000, 4500, 5000]
+        # bins = [-1947.0, -404.0, -323.0, -245.0, -221.0, -166.0, -102.0, 364.0, 1400.0, 3156.0, 4844.0]
+        diff = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500"]
+        
+        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'right'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right'), pd.Interval(left = bins[9],right =  bins[10], closed = 'right'), pd.Interval(left = bins[10],right =  bins[11], closed = 'right'), pd.Interval(left = bins[11],right =  bins[12], closed = 'right'), pd.Interval(left = bins[12],right =  bins[13], closed = 'right')]
+        return diff[0] if d in intervals[0] else (diff[1] if d in intervals[1] else (diff[2] if d in intervals[2] else (diff[3] if d in intervals[3] else (diff[4] if d in intervals[4] else (diff[5] if d in intervals[5] else (diff[6] if d in intervals[6] else (diff[7] if d in intervals[7] else (diff[8] if d in intervals[8] else (diff[9] if d in intervals[9] else (diff[10] if d in intervals[10] else (diff[11] if d in intervals[11] else (diff[12] if d in intervals[12] else diff[13])))))))))))) 
+
     # # getters for data discretization
 
-    def get_consumption(self,c):
-        if self.bins_cons == 3: 
-            return self.get_consumption_three(c)
-        if self.bins_cons == 5: 
-            return self.get_consumption_five(c)
-        if self.bins_cons == 7: 
-            return self.get_consumption_seven(c)
-        if self.bins_cons == 10: 
-            return self.get_consumption_ten(c)
-        
-
-    # bins: (0-250, 250-360, >360)
-    def get_consumption_three(self,c):
-        return "low" if c < 250  else  ("average" if (c > 250) and (c < 360) else ("high"))
-
-    # bins: [0.  217.  266.  339.  424. 2817.]
-    def get_consumption_five(self,c):
-        cons = ["very low", "low", "average", "high", "very high"]
-        intervals = [pd.Interval(left = 0, right = 215, closed = 'both'),pd.Interval(left = 215,right = 270, closed = 'right'), pd.Interval(left = 270,right =  340, closed = 'right'), pd.Interval(left = 340,right =  430, closed = 'right'), pd.Interval(left = 430,right =  2900, closed = 'right')]
-        return cons[0] if c in intervals[0] else (cons[1] if c in intervals[1] else (cons[2] if c in intervals[2] else (cons[3] if c in intervals[3] else cons[4]))) 
-
-    # bins : [0.0, 196.0, 231.0, 278.0, 329.0, 382.0, 478.0, 2817]
-    def get_consumption_seven(self,c):
-        bins = [0.0, 196.0, 231.0, 278.0, 329.0, 382.0, 478.0, 2817]
-        # bins = [0, 402, 804, 1206, 1608, 2010, 2412, 2820]
-        cons = ["very low", "low", "moderately low","average", "moderalety high", "high", "very high"]
-        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right')]
-
-        return cons[0] if c in intervals[0] else (cons[1] if c in intervals[1] else (cons[2] if c in intervals[2] else (cons[3] if c in intervals[3] else (cons[4] if c in intervals[4] else (cons[5] if c in intervals[5] else cons[6]))))) 
-
-    # bins: [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
-    def get_consumption_ten(self,c):
-        bins = [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
-        cons = ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]
-        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right')]
-
-        return cons[0] if c in intervals[0] else (cons[1] if c in intervals[1] else (cons[2] if c in intervals[2] else (cons[3] if c in intervals[3] else (cons[4] if c in intervals[4] else (cons[5] if c in intervals[5] else (cons[6] if c in intervals[6] else (cons[7] if c in intervals[7] else (cons[8] if c in intervals[8] else cons[9])))))))) 
-
+    def get_difference(self,d):
+        return self.get_difference_ten(d)
+   
     # getters for production based on chosen discretization
     def get_production(self,p):
         if self.bins_prod == 3:
@@ -190,7 +170,7 @@ class MDP:
             costs.append(State.get_cost(current_state,action, self))
             actions.append(action)
             battery.append(current_state.battery)
-            states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
+            states.append((current_state.difference, current_state.battery,current_state.time))
             
             l = len(dat["Consumption"])
             current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%l], dat["Production"][(i+1)%l], dat["Production"][(i+2)%l], dat["Time"][(i+1)%l], self)
@@ -220,13 +200,12 @@ class MDP:
 class State:
 
     def __init__(self, c, p, battery, p_next, time, mdp):
-        self.consumption = mdp.get_consumption(c)
-        self.production = mdp.get_production(p)
+        self.difference = p - c
         self.battery = battery
         self.time = time
         self.c = c
         self.p = p
-        self.pred = mdp.get_predict_prod(p_next)
+        self.pred = p_next
         self.predicted_prod = mdp.get_production(self.pred)
     
     # move to next state based on chosen action
@@ -244,13 +223,14 @@ class State:
         else:
             next_battery = self.battery
 
-        next_state = State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
+        next_state = State(new_c,new_p, int(next_battery), new_pred, new_time, mdp)
 
         return next_state
     
 
     # different getid for different discretization
     def get_id(state, mdp):
+        return State.get_id_ten(state, mdp)
         if mdp.bins_cons == 3:
             return State.get_id_three(state, mdp)
         if mdp.bins_cons == 5:
@@ -293,18 +273,14 @@ class State:
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
 
     def get_id_ten(state, mdp):
-        # consumption
-        cons= ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]
-    
-        c = 0 if (state.consumption == cons[0]) else (1 if (state.consumption == cons[1]) else (2 if (state.consumption == cons[2]) else (3 if (state.consumption == cons[3]) else (4 if (state.consumption == cons[4]) else (5 if (state.consumption == cons[5]) else (6 if (state.consumption == cons[6]) else (7 if (state.consumption == cons[7]) else (8 if (state.consumption == cons[8]) else 9)))))))) 
-        # consumption
+        diff = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500"]
+        
+        d = 0 if (state.difference == diff[0]) else (1 if (state.difference == diff[1]) else (2 if (state.difference == diff[2]) else (3 if (state.difference == diff[3]) else (4 if (state.difference == diff[4]) else (5 if (state.difference == diff[5]) else (6 if (state.difference == diff[6]) else (7 if (state.difference == diff[7]) else (8 if (state.difference == diff[8]) else (9 if (state.difference == diff[9]) else (10 if (state.difference == diff[10]) else (11 if (state.difference == diff[11]) else (12 if (state.difference == diff[12]) else 13)))))))))))) 
+        # predicted difference
         prod = ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]
-
-        p = 0 if (state.production == prod[0]) else (1 if (state.production == prod[1]) else (2 if (state.production == prod[2]) else (3 if (state.production == prod[3]) else (4 if (state.production == prod[4]) else (5 if (state.production == prod[5]) else (6 if (state.production == prod[6]) else (7 if (state.production == prod[7]) else (8 if (state.production == prod[8]) else 9)))))))) 
-        # predicted production
         pred = 0 if (state.predicted_prod == prod[0]) else (1 if (state.predicted_prod == prod[1]) else (2 if (state.predicted_prod == prod[2]) else (3 if (state.predicted_prod == prod[3]) else (4 if (state.predicted_prod == prod[4]) else (5 if (state.predicted_prod == prod[5]) else (6 if (state.predicted_prod == prod[6]) else (7 if (state.predicted_prod == prod[7]) else (8 if (state.predicted_prod == prod[8]) else 9)))))))) 
         
-        return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
+        return d * (mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
     
     def check_action(state,action, mdp):
         illegal = False

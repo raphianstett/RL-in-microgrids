@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 class Data:
     def get_data(self):
         dat = pd.read_csv("MA_data.csv")
-        dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'is weekend': dat["is_weekend"], 'Time': dat["Time"]}
-        dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Production_A','Production_B', 'is_weekend', 'Time'])        
+        # print(dat[:100])
+        dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'is weekend': dat["is_weekend"], 'Date': dat["Date"],'Time': dat["Time"]}
+        dat['Date'] = pd.to_datetime(dat['Date'])
+        dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Production_A','Production_B', 'is weekend', 'Date','Time'])        
         return dat
     
     def write_data(self):
@@ -16,17 +18,19 @@ class Data:
         df["Consumption_B"] = self.add_noise(self.shuffle_consumption(df), 0.1)
         
         df["Production_B"] = self.scale_production(df["Production"], 0.8)
+        df["Date"] = self.get_days().repeat(24)
         df = df.rename(columns = {"Consumption" : "Consumption_A", "Production" : "Production_A"})
         
-        df = df[["Consumption_A", "Consumption_B", "Production_A", "Production_B", "is_weekend", "Time"]]
-        df.to_csv("MA_data.csv")
-        # return df
+        df = df[["Consumption_A", "Consumption_B", "Production_A", "Production_B", "is_weekend", "Date", "Time"]]
+        
+        df.to_csv("MA_data.csv", index = False)
+        # print(df)
 
     def get_days(self):
         start_date = '2021-06-01'
         end_date = '2022-05-31'
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-        
+        #dates = date_range.repeat(24)
         return date_range
 
     def get_weekend(self,dates):
@@ -109,6 +113,13 @@ class Data:
         prod = [np.floor(x * scaling) for x in prod]
         return prod
 
+    def get_data_B(self):
+        dat = self.get_data()
+        dat_B = pd.DataFrame(dat, columns=['Consumption_B', 'Production_B', 'is weekend', 'Time']) 
+        dat_B['Date'] = self.get_days().repeat(24)
+        dat_B = dat_B.rename(columns = {"Consumption_B" : "Consumption", "Production_B" : "Production"})
+        return dat_B
+        
 
     
     def plot_data(self,df):
@@ -132,3 +143,4 @@ class Data:
         plt.legend()
 
         plt.show()
+

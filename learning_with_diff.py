@@ -1,5 +1,6 @@
 import numpy as np
-from environment import State
+from environment_with_diff import State
+
 
 np.set_printoptions(threshold=np.inf)
 
@@ -118,7 +119,7 @@ class Baseline:
             # print(current_state.battery)
 
             rewards.append(State.get_cost(current_state,action, mdp))
-            # states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
+            states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
             actions.append(action)
             
             battery.append(current_state.battery)
