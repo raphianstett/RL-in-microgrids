@@ -35,20 +35,18 @@ summer_data = RealData.get_summer(data)
 training_data, test_data = RealData.split_data(summer_data, 7)
 
 # initialize MDP
-# MDP(max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_cons, bins_prod)
+# MDP(max_charge, max_discharge, charge_low, discharge_low, max_battery, bins_cons, bins_prod)
 
 mdp_3 = MDP(1000, 1000, 500, 500, 6000, 3,3)
 mdp_5 = MDP(1000, 1000, 500, 500, 6000, 5,5)
-mdp_7 = MDP(2000, 500, 200, 200, 6000, 7,7)
-mdp_10 = MDP(1000, 500, 500, 200, 4000, 10,10)
+mdp_7 = MDP(1000, 500, 200, 200, 4000, 7,7)
+mdp_10 = MDP(1000, 500, 200, 200, 4000, 10,10)
 mdp = mdp_10
 mdp_d = dMDP(1000, 500, 200, 500, 4000, 10, 10)
 
 
 
 ### TEST BINNING IN RL CONVERGENCE ###
-
-
 def test_binning():
     bins = [3,5,7,10]
     # bins = [3,5]
@@ -285,8 +283,8 @@ print("amount discharged 1: " + str(dis))
 # print("amount wasted when discharging" + str(loss))
 # print(applied_actions)
 
-# plt.plot(rewards_per_episode)
-# plt.show()
+plt.plot(rewards_per_episode)
+plt.show()
 cons = test_data["Consumption"]
 scaled_cons = [x/100 for x in cons]
 prod = test_data["Production"]
@@ -302,6 +300,12 @@ plt.plot(battery_states1[:186], color = "red")
 # plt.plot(battery_states2[:186], color = "green")
 plt.plot(baseline_bat[:186], color = "black")
 plt.show()
+
+plt.plot(battery_states1[200:386], color = "red")
+plt.plot(baseline_bat[200:386], color = "black")
+plt.show()
+
+
 plt.hist(policy1, color = "red")
 plt.show()
 

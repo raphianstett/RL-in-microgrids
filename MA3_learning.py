@@ -6,7 +6,7 @@ import pandas as pd
 from MA2_environment import MDP
 from MA3_environment import Reward
 from MA3_environment import State
-from MA2_environment import State as State2
+from environment import State as State2
 
 class MA_QLearning:
 # define parameters for q-learning
@@ -94,14 +94,18 @@ class MA_QLearning:
                 next_state_B = State2.get_next_state(state_B, action_B, data["Consumption_B"][(i+1)%len(data["Consumption_B"])], data["Production_B"][(i+1)%len(data["Consumption_B"])], data["Production_B"][(i+2)%len(data["Consumption_B"])], data["Time"][(i+1)%len(data["Consumption_B"])], mdp)
                 next_state_C = State2.get_next_state(state_C, action_C, data["Consumption_C"][(i+1)%len(data["Consumption_C"])], data["Production_C"][(i+1)%len(data["Consumption_C"])], data["Production_C"][(i+2)%len(data["Consumption_C"])], data["Time"][(i+1)%len(data["Consumption_C"])], mdp)
 
-    
+                # get best next expected reward (only from already explored states)
+                max_next_A = mdp.get_best_next(Q_A[State.get_id(next_state_A, mdp),:])
+                max_next_B = mdp.get_best_next(Q_B[State.get_id(next_state_B, mdp),:])
+                max_next_C = mdp.get_best_next(Q_C[State.get_id(next_state_C, mdp),:])
+
                 # update Q-tables with Bellman equation
-                Q_A[state_A_id, action_A_id] = (1-lr) * Q_A[state_A_id, action_A_id] + lr*(reward_A + gamma*max(Q_A[State2.get_id(next_state_A, mdp),:]) - Q_A[state_A_id, action_A_id])
-                Q_B[state_B_id, action_B_id] = (1-lr) * Q_B[state_B_id, action_B_id] + lr*(reward_B + gamma*max(Q_B[State2.get_id(next_state_B, mdp),:]) - Q_B[state_B_id, action_B_id])
-                Q_C[state_C_id, action_C_id] = (1-lr) * Q_C[state_C_id, action_C_id] + lr*(reward_C + gamma*max(Q_C[State2.get_id(next_state_C, mdp),:]) - Q_C[state_C_id, action_C_id])
+                Q_A[state_A_id, action_A_id] = (1-lr) * Q_A[state_A_id, action_A_id] + lr*(reward_A + gamma*max_next_A - Q_A[state_A_id, action_A_id])
+                Q_B[state_B_id, action_B_id] = (1-lr) * Q_B[state_B_id, action_B_id] + lr*(reward_B + gamma*max_next_B - Q_B[state_B_id, action_B_id])
+                Q_C[state_C_id, action_C_id] = (1-lr) * Q_C[state_C_id, action_C_id] + lr*(reward_C + gamma*max_next_C - Q_C[state_C_id, action_C_id])
 
                 # sum reward
-                total_reward = total_reward + reward_A + reward_B
+                total_reward = total_reward + reward_A + reward_B + reward_C
                 
                 # all_rewards.append(reward)
                 # chosen_actions.append(mdp.get_action_id(action))

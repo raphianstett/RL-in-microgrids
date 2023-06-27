@@ -23,14 +23,14 @@ df_training, test = RealData.split_data(df, 7)
 
 x, df_bs_B = RealData.split_data(data2.get_data_B(), 7)
 x, df_bs_A = RealData.split_data(RealData.get_real_data(), 7)
-mdp = MDP(1000, 1000, 500, 500, 12000, 5,5)
+mdp = MDP(1000, 1000, 500, 500, 12000, 7,7)
 
 # test B data on single agent
 # mdp_B = SMDP(1000, 1000, 200, 500, 60, 7,7)
 # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(df_bs_B,500, mdp_B)
 # reward_B, policy_B, battery_B, dis_B, loss_B, states_B = SMDP.find_policy(mdp_B, Q, df_bs_B)
 
-Q_A,Q_B,Q_C, rewards_per_episode, changed, all_rewards = MA_QLearning.iterate(df_training,100, mdp)
+Q_A,Q_B,Q_C, rewards_per_episode, changed, all_rewards = MA_QLearning.iterate(df_training,10, mdp)
 
 print("actions A changed with check actions: " + str(changed))
 # print(all_rewards)

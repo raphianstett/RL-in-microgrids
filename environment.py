@@ -21,7 +21,7 @@ class MDP:
         self.bins_cons = bins_cons
         consumption_discr = [["low", "average", "high"],
                             ["very low", "low", "average", "high", "very high"],
-                            ["low", "very low", "low", "moderately low" "average", "moderalety high", "high", "very high"],
+                            ["very low", "low", "moderately low", "average", "moderately high", "high", "very high"],
                             ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]]
         
         idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
@@ -63,6 +63,10 @@ class MDP:
 
         self.n_time = len(self.time)
         self.n_states = self.n_consumption * self.n_production * self.n_battery * self.n_time * self.n_pred_production
+        print("states " + str(self.n_states))
+        print("battery: " + str(self.n_battery))
+        print("consumption: " + str(self.n_consumption))
+        print("production: " + str(self.n_production))
         
 
 
@@ -102,7 +106,7 @@ class MDP:
     def get_consumption_seven(self,c):
         bins = [0.0, 196.0, 231.0, 278.0, 329.0, 382.0, 478.0, 2817]
         # bins = [0, 402, 804, 1206, 1608, 2010, 2412, 2820]
-        cons = ["very low", "low", "moderately low","average", "moderalety high", "high", "very high"]
+        cons = ["very low", "low", "moderately low","average", "moderately high", "high", "very high"]
         intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right')]
         return self.get_label_for_value(intervals, cons, c)
     
@@ -174,11 +178,25 @@ class MDP:
         # print(q_values)
         # print(np.argmax(q_values))
         min_value = min(q_values)
-        q_values = [value if value != 0 else min_value for value in q_values]
-        if all(q == q_values[0] for q in q_values):
-            return random.choice([0,1,2,3,4]), q_values
+        #print(q_values)
+        q_values = [value if value != 0 else (min_value -1) for value in q_values]
+        max_value = max(q_values)
         
-        return np.argmax(q_values) if max(q_values) != 0 else 2, q_values
+        # print("max value:" + str(max_value))
+        if all(q == q_values[0] for q in q_values) or len(q_values) == 0:
+            return random.choice([0,1,2,3,4])#, q_values
+        indices = [index for index, value in enumerate(q_values) if value == max_value]
+        #print(indices)
+        
+        return random.choice(indices)#, q_values
+        #return np.argmax(q_values) if max(q_values) != 0 else 2, q_values
+
+    def get_best_next(self,q_values):
+        min_value = min(q_values)
+        # print(q_values)
+        q_values = [value if value != 0 else min_value for value in q_values]
+        return max(q_values)
+
 
     # total cost function after applying learned policy
     def get_total_costs(self,rewards):
@@ -202,6 +220,8 @@ class MDP:
             
             # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
             action = self.action_space[self.get_best_action(Q_table[State.get_id(current_state, self),:])]
+            # print(Q_table[State.get_id(current_state, self),:])
+            # print(action)
             # print("State: " + str(State.get_id(current_state))
             # print("Action ID: " + str(MDP.get_action_id(action)))
             # print("Q table: " + str(Q_table[State.get_id(current_state),]))
@@ -215,10 +235,10 @@ class MDP:
             current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%l], dat["Production"][(i+1)%l], dat["Production"][(i+2)%l], dat["Time"][(i+1)%l], self)
             
             # check amount of discharged energy
-            if action == "discharge_high":
+            if action == "discharge_high" and current_state.battery - self.discharge_high >= 0:
                     discharged += self.discharge_high
                     loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-            if action == "discharge_low":
+            if action == "discharge_low" and current_state.battery - self.discharge_low >= 0:
                     discharged += self.discharge_low
                     loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
         return costs, actions, battery, discharged, loss, states
@@ -286,26 +306,29 @@ class State:
         
 
     def get_id_five(state, mdp):
-        c = {"very low": 0, "low": 1, "average": 2, "high": 3}[state.consumption]
-        p = {"none": 0, "low": 1, "average": 2, "high": 3}[state.production]
-        pred = {"none": 0, "low": 1, "average": 2, "high": 3}[state.predicted_prod]
+        c = {"very low": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.consumption]
+        p = {"none": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.production]
+        pred = {"none": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.predicted_prod]
 
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
 
     def get_id_seven(state, mdp):
-        c = {"very low": 0, "low": 1, "moderately low": 2, "average": 3, "moderately high": 4, "high": 5}[state.consumption]
-        p = {"none": 0, "very low": 1, "low": 2, "average_low": 3, "average_high": 4, "high": 5}[state.production]
-        pred = {"none": 0, "very low": 1, "low": 2, "average_low": 3, "average_high": 4, "high": 5}[state.predicted_prod]
+        c = {"very low": 0, "low": 1, "moderately low": 2, "average": 3, "moderately high": 4, "high": 5, "very high": 6}[state.consumption]
+        p = {"none": 0, "very low": 1, "low": 2, "average_low": 3, "average_high": 4, "high": 5, "very high":6}[state.production]
+        pred = {"none": 0, "very low": 1, "low": 2, "average_low": 3, "average_high": 4, "high": 5, "very high": 6}[state.predicted_prod]
+        # print(state.consumption)
+        # print(state.production)
+        # print(state.predicted_prod)
+        # print("c " + str(c))
+        # print("p " + str(p))
+        # print("pred " +str(pred))
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
 
     def get_id_ten(state, mdp):
         # consumption
         c = {"extremely low":0, "very low":1, "low":2, "moderately low":3,"average":4, "moderalety high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}[state.consumption]
-        
-        
         prod = {"none":0, "very low":1,"low":2, "moderately low":3, "average":4, "moderately high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}
         p = prod.get(state.production)
-    
         pred = prod.get(state.predicted_prod)
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
     
@@ -409,8 +432,8 @@ def count_occurences(data):
 # very high very high 6.0 very high 10
 
 # # print(State.get_id(s))
-mdp = MDP(1000, 1000, 500, 500, 6000, 10,10)
-# s = State(305.0, 119.0, 1000, 3300, 23, mdp)
-# print(s.get_id(mdp))
-q = [0, 0, 0, -5,-1]
-print(MDP.get_best_action(mdp, q))
+# mdp = MDP(1000, 1000, 500, 500, 6000, 10,10)
+# # # s = State(305.0, 119.0, 1000, 3300, 23, mdp)
+# # # print(s.get_id(mdp))
+# q = [-1, -2,0,-1,-2]
+# print(MDP.get_best_next(mdp, q))

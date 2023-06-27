@@ -67,6 +67,12 @@ class MDP:
     def get_battery_id(self,battery):
         return int(battery * (1/min(self.discharge_low, self.charge_low))) 
 
+    def get_best_next(self,q_values):
+        min_value = min(q_values)
+        # print(q_values)
+        q_values = [value if value != 0 else min_value for value in q_values]
+        return max(q_values)
+
     # reward function
     max_loss = -999999999999999999
 
@@ -163,9 +169,17 @@ class MDP:
     # returns 2 (do nothing), if all q-values are the same
     
     def get_best_action(self,q_values):
-        q_values[q_values == 0] = min(q_values)
-        return np.argmax(q_values) if max(q_values) != 0 else 2 
-
+        
+        min_value = min(q_values)
+        q_values = [value if value != 0 else (min_value -1) for value in q_values]
+        # if len(q_values)== 0:
+        #     return 2
+        max_value = max(q_values)
+        if all(q == q_values[0] for q in q_values) or len(q_values) == 0:
+            return random.choice([0,1,2,3,4])#, q_values
+        indices = [index for index, value in enumerate(q_values) if value == max_value]
+        return random.choice(indices)#, q_values
+    
     # total cost function after applying learned policy
     def get_total_costs(self,rewards):
             rewards = np.array(rewards)
@@ -252,8 +266,7 @@ class State:
     
     def get_battery_value(action, mdp):
         return mdp.battery_steps[mdp.action_space.index(action)]
-        # return mdp.step_high_charge if action == 'charge_high' else (mdp.step_low_charge if action == 'charge_low' else((- mdp.step_high_discharge) if action == 'discharge_high' else (- mdp.step_low_discharge)))
-    
+        
     def get_action_for_delta(self,delta, mdp):
         return mdp.action_space[mdp.battery_steps.index(delta)]
     
@@ -274,27 +287,32 @@ class State:
     def check_deltas(state, deltaA, deltaB, deltaC, mdp):
         minimum = 0
         maximum = mdp.max_battery
+        if deltaC > 0:
+            raise ValueError
         deltas = [deltaA, deltaB, deltaC]
         sum_deltas = np.sum(deltas)
+        print(sum_deltas)
         # print(sum_deltas)
         if minimum <= state.battery + sum_deltas <= maximum:
             # print(state.battery + sum_deltas)
-            # print("in if")
+            print("in if")
             return deltas[0], deltas[1], deltas[2]
         
         # deltas = [deltaA, deltaB] if state.battery + sum_deltas > maximum else deltas
         # print(deltas)
         while state.battery + sum_deltas > maximum or state.battery + sum_deltas < minimum:
-            # print("in while")
+            #print("in while")
             
             for counter in range(len(deltas)):
                 if state.battery + sum_deltas > maximum:
                     # print("first")
                     i = random.randint(0,1)
+                    # print(i)
+                    # print(deltas)
                     delta = deltas[i]
-                    # print(delta)
+                    #print(delta)
                     if delta > 0:
-                        reduction = 500 # random.choice([5, 10]) if state.battery + sum_deltas - maximum >= 10 else 5
+                        reduction = mdp.charge_low # random.choice([5, 10]) if state.battery + sum_deltas - maximum >= 10 else 5
                         # print(state.battery + sum_deltas - maximum)
                         if delta >= reduction:
                             # print(reduction)
@@ -309,7 +327,7 @@ class State:
                     # print(i)
                     if delta < 0:
                         # print("second increase")
-                        increase = 500 # random.choice([5, 10]) if state.battery + sum_deltas <= -10 else 5
+                        increase = mdp.discharge_low # random.choice([5, 10]) if state.battery + sum_deltas <= -10 else 5
                         if delta <= -increase:
                             deltas[i] += increase
                             sum_deltas += increase
@@ -338,7 +356,7 @@ class Reward:
     
     def calc_reward(state, delta, mdp):
         # max_loss only if charging and available does not cover production
-        if delta > 0 and delta*100 > state.p - state.c:
+        if delta > 0 and delta > state.p - state.c:
             return mdp.max_loss
         else:
             return - np.abs(state.p - delta - state.c)
@@ -351,12 +369,13 @@ class Reward:
     def calc_cost(state, delta):
         return min(state.p - delta - state.c, 0)
 
-mdp = MDP(1000, 1000, 500, 500,6000, 5,5)
-# 1148.0,1148.0,388.0,5393.0,4314.0,0
-s_A = State(1148,1000, 5, 4800, 13, mdp)
+# mdp = MDP(1000, 1000, 500, 500,6000, 5,5)
+# # 1148.0,1148.0,388.0,5393.0,4314.0,0
+# s_A = State(1148,1000, 1000, 6000, 13, mdp)
+# print(s_A.check_deltas(-1000,-500,-500, mdp))
 # s_B = State(1148, 4314, 5, 4000, 13, mdp)
 # s_C = State(388, 0, 5, 0, 13, mdp)
 # print(s_A.check_actions("discharge_high", "charge_high", "do nothing", mdp))
 # print(Reward.get_reward(s_A, s_B, s_C, "charge_high", "charge_high", "do nothing", mdp))
-print(mdp.get_battery_id(500))
+# print(mdp.get_battery_id(500))
 
