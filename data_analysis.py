@@ -332,6 +332,7 @@ ax.set_xticklabels(x)
 ax.legend()
 #plt.show()
 
-print(np.median(dat["Production"]))
+# print(np.median(dat["Production"]))
 # print(dat["Date"][5880:6048])
+print(int(2500/3))
 

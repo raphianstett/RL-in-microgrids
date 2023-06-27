@@ -37,12 +37,12 @@ training_data, test_data = RealData.split_data(summer_data, 7)
 # initialize MDP
 # MDP(max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_cons, bins_prod)
 
-mdp_3 = MDP(1000, 1000, 500, 500, 6, 3,3)
-mdp_5 = MDP(1000, 1000, 500, 500, 6, 5,5)
-mdp_7 = MDP(2000, 500, 200, 200, 60, 7,7)
-mdp_10 = MDP(1000, 500, 200, 500, 40, 10,10)
+mdp_3 = MDP(1000, 1000, 500, 500, 6000, 3,3)
+mdp_5 = MDP(1000, 1000, 500, 500, 6000, 5,5)
+mdp_7 = MDP(2000, 500, 200, 200, 6000, 7,7)
+mdp_10 = MDP(1000, 500, 500, 200, 4000, 10,10)
 mdp = mdp_10
-mdp_d = dMDP(1000, 500, 200, 500, 40, 10, 10)
+mdp_d = dMDP(1000, 500, 200, 500, 4000, 10, 10)
 
 
 
@@ -166,7 +166,7 @@ def plot_batteries(a, b, battery_states, baseline_bat):
 
 
 def compare_actions_hist(mdp):
-    Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,100, mdp)
+    Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,10, mdp)
     reward, applied_actions, battery_states, dis = MDP.find_policy(mdp, Q_table_sol, training_data)
     fig, ax = plt.subplots()
     # Define the bins
@@ -257,19 +257,19 @@ print(len(unique))
 # diff = [baseline_rewards[i] - reward[i] for i in range(len(reward))]
 # print()
 # print(diff)
-# print(np.sum(diff))
-Q2, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning_d.iterate(training_data,800, mdp_d)
+# # print(np.sum(diff))
+# Q2, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning_d.iterate(training_data,500, mdp_d)
 
-reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
+# reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
 
 
-Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,800, mdp)
+Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,1000, mdp)
 
 reward1, policy1, battery_states1, dis, loss, visited_states = mdp.find_policy(Q1, test_data)
 
 
 print("Q-Learning normal: " + str(np.sum(reward1)))
-print("Q-Learning with difference: " + str(np.sum(reward2)))
+# print("Q-Learning with difference: " + str(np.sum(reward2)))
 
 print("Baseline:   " + str(np.sum(baseline_rewards)))
 print("without battery: " + str(mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])))
@@ -280,7 +280,7 @@ print("without battery: " + str(mdp.get_total_costs(test_data["Production"] - te
 # print(len(data["Purchased"]))
 # plot_batteries(0,240,battery_states, baseline_bat)
 print("amount discharged 1: " + str(dis))
-print("amount discharged2 : " + str(dis2))
+# print("amount discharged2 : " + str(dis2))
 
 # print("amount wasted when discharging" + str(loss))
 # print(applied_actions)
@@ -298,13 +298,15 @@ scaled_prod = [x/100 for x in prod]
 # plt.plot(scaled_prod[1000:1240], color = "yellow")
 # plt.show()
 plt.plot(battery_states1[:186], color = "red")
-plt.plot(battery_states2[:186], color = "green")
+
+# plt.plot(battery_states2[:186], color = "green")
 plt.plot(baseline_bat[:186], color = "black")
 plt.show()
 plt.hist(policy1, color = "red")
-plt.plot()
-plt.hist(policy2, color = "green")
 plt.show()
+
+# plt.hist(policy2, color = "green")
+
 def data_to_states(mdp, data):
     states = []
     for i in range(len(data)-1):
@@ -317,3 +319,5 @@ def data_to_states(mdp, data):
     return Counter(states)
 # print(len(Counter(baseline_states)))
 #print(baseline_states[:100])
+plt.hist(baseline_actions)
+plt.show()

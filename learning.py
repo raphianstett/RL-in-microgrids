@@ -13,7 +13,7 @@ class QLearning:
         exploration_proba = 1
 
         #exploartion decreasing decay for exponential decreasing
-        exploration_decreasing_decay = 10/n_episodes #4 / n_episodes
+        exploration_decreasing_decay = 1/n_episodes #4 / n_episodes
 
         # minimum of exploration proba
         min_exploration_proba = 0.02
@@ -36,7 +36,7 @@ class QLearning:
         Q_table = np.zeros((mdp.n_states, mdp.n_actions))
         
         # initialize the first state of the episode
-        current_state = State(data["Consumption"][0], data["Production"][0], 20, data["Production"][1] ,data["Time"][0], mdp)
+        current_state = State(data["Consumption"][0], data["Production"][0], 2000, data["Production"][1] ,data["Time"][0], mdp)
         l = len(data["Consumption"])
             
         for e in range(n_episodes):
@@ -96,20 +96,20 @@ class Baseline:
         actions = []
         diffs = []
         battery = []
-        current_state = State(data["Consumption"][0], data["Production"][0], 20,data["Production"][1], data["Time"][0], mdp)
+        current_state = State(data["Consumption"][0], data["Production"][0], 2000,data["Production"][1], data["Time"][0], mdp)
         
         for i in range(1,len(data["Consumption"])):
             
-            if current_state.p - current_state.c >= 1000 and current_state.battery + mdp.step_high_charge <= mdp.max_battery:
+            if current_state.p - current_state.c >= 1000 and current_state.battery + mdp.charge_high <= mdp.max_battery:
                 action = "charge_high"
                 # print("charge_high")
-            elif current_state.p - current_state.c >= mdp.charge_low and current_state.battery + mdp.step_low_charge <= mdp.max_battery:
+            elif current_state.p - current_state.c >= mdp.charge_low and current_state.battery + mdp.charge_low <= mdp.max_battery:
                 action = "charge_low"
                 # print("charge_low")
-            elif (current_state.c - current_state.p) >= mdp.discharge_low and current_state.battery - mdp.step_high_discharge >= 0:
+            elif (current_state.c - current_state.p) >= mdp.discharge_low and current_state.battery - mdp.discharge_high >= 0:
                 action = "discharge_high"
                 # print("discharge_high")
-            elif (current_state.c - current_state.p) > 0 and current_state.battery - mdp.step_low_discharge >= 0:
+            elif (current_state.c - current_state.p) > 0 and current_state.battery - mdp.discharge_low >= 0:
                 action = "discharge_low"
                 # print("discharge_low")
             else:
@@ -122,7 +122,7 @@ class Baseline:
             actions.append(action)
             
             battery.append(current_state.battery)
-            diffs.append((current_state.c - current_state.p) >= mdp.max_discharge and current_state.battery - mdp.step_high_discharge >= 0)
+            diffs.append((current_state.c - current_state.p) >= mdp.discharge_high and current_state.battery - mdp.discharge_high >= 0)
 
             current_state = State.get_next_state(current_state, action, data["Consumption"][i], data["Production"][i],data["Production"][(i+1)%len(data["Production"])], data["Time"][i], mdp)
             # print(current_state.consumption, current_state.production, current_state.battery,current_state.time)

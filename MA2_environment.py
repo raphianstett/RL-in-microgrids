@@ -171,9 +171,11 @@ class MDP:
         loss = 0
         if agent == "A":
             current_state = State(dat["Consumption_A"][0], dat["Production_A"][0], 20, dat["Production_A"][1], dat["Time"][0], self)
-        else:
+        if agent == 'B':
             current_state = State(dat["Consumption_B"][0], dat["Production_B"][0], 20, dat["Production_B"][1], dat["Time"][0], self)
-        
+        else:
+            current_state = State(dat["Consumption_C"][0], dat["Production_C"][0], 20, dat["Production_C"][1], dat["Time"][0], self)
+                                      
         for i in range(len(dat["Consumption_A"])):
             
             # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
@@ -191,9 +193,10 @@ class MDP:
             l = len(dat["Consumption_A"])
             if agent == "A":
                 current_state = State.get_next_state(current_state, action, dat["Consumption_A"][(i+1)%l], dat["Production_A"][(i+1)%l], dat["Production_A"][(i+2)%l], dat["Time"][(i+1)%l], self)
-            else:
+            if agent == 'B':
                 current_state = State.get_next_state(current_state, action, dat["Consumption_B"][(i+1)%l], dat["Production_B"][(i+1)%l], dat["Production_B"][(i+2)%l], dat["Time"][(i+1)%l], self)
-            
+            else:
+                current_state = State.get_next_state(current_state, action, dat["Consumption_C"][(i+1)%l], dat["Production_C"][(i+1)%l], dat["Production_C"][(i+2)%l], dat["Time"][(i+1)%l], self)
             # check amount of discharged energy
             if action == "discharge_high":
                     discharged += self.max_discharge

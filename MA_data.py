@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-class Data:
+class Data_2:
     def get_data(self):
         dat = pd.read_csv("MA_data.csv")
         # print(dat[:100])
@@ -17,7 +17,7 @@ class Data:
         df = RealData.get_real_data()
         df["Consumption_B"] = self.add_noise(self.shuffle_consumption(df), 0.1)
         
-        df["Production_B"] = self.scale_production(df["Production"], 0.8)
+        df["Production_B"] = self.scale(df["Production"], 0.8)
         df["Date"] = self.get_days().repeat(24)
         df = df.rename(columns = {"Consumption" : "Consumption_A", "Production" : "Production_A"})
         
@@ -109,7 +109,7 @@ class Data:
             x *= noise  
         return vec
 
-    def scale_production(self,prod, scaling):
+    def scale(self,prod, scaling):
         prod = [np.floor(x * scaling) for x in prod]
         return prod
 
@@ -144,3 +144,30 @@ class Data:
 
         plt.show()
 
+class Data_3:
+    def write_data(self):
+        data2 = Data_2()
+        df = RealData.get_real_data()
+        
+        df["Consumption_B"] = data2.add_noise(data2.shuffle_consumption(df), 0.1)
+        df["Production_B"] = data2.scale(df["Production"], 0.8)
+        df["Date"] = data2.get_days().repeat(24)
+        df["Consumption_C"] = data2.scale(data2.add_noise(data2.shuffle_consumption(df), 0.2), 0.5)
+        df["Production_C"] = [0]*(24*365)
+        df["Date"] = data2.get_days().repeat(24)
+        df = df.rename(columns = {"Consumption" : "Consumption_A", "Production" : "Production_A"})
+        
+        df = df[["Consumption_A", "Consumption_B", "Consumption_C", "Production_A", "Production_B", "Production_C", "is_weekend", "Date", "Time"]]
+        
+        df.to_csv("MA_3_data.csv", index = False)
+        # print(df[:100])
+        # return df
+    
+    def get_data(self):
+        dat = pd.read_csv("MA_3_data.csv")
+        # print(dat[:100])
+        dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Consumption_C': dat["Consumption_C"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'Production_C': dat["Production_C"], 'is weekend': dat["is_weekend"], 'Date': dat["Date"],'Time': dat["Time"]}
+        dat['Date'] = pd.to_datetime(dat['Date'])
+        dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Consumption_C', 'Production_A','Production_B','Production_C', 'is weekend', 'Date','Time'])        
+        return dat
+        
