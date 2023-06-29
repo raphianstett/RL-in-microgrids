@@ -76,16 +76,11 @@ class MA_QLearning:
                 
                 
                 # run the chosen action and return the next state and the reward for the action in the current state.
-                action_A,reward_A,action_B, reward_B, action_C, reward_C =  Reward.get_reward(state_A, state_B, state_C, action_A, action_B, action_C, mdp)
+                reward_A, reward_B, reward_C =  Reward.get_reward(state_A, state_B, state_C, action_A, action_B, action_C, mdp)
                 
                 all_rewards.append(reward_A)
                 all_rewards.append(reward_B)
                 all_rewards.append(reward_C)
-                
-                action_A_id = mdp.get_action_id(action_A)
-                changed = changed + 1 if prev_id_A != action_A_id else changed
-                action_B_id = mdp.get_action_id(action_B)
-                action_C_id = mdp.get_action_id(action_C)
 
                 # reward_B = Reward.get_reward(state_B, action_B,mdp)
                 

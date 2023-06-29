@@ -277,13 +277,13 @@ class State:
         deltaB = State.get_battery_value(action_B, mdp)
         deltaC = State.get_battery_value(action_C, mdp)
         deltaA, deltaB, deltaC = State.check_deltas(state,deltaA, deltaB, deltaC, mdp)
-        # print(deltaA, deltaB, deltaC)
-        # check if deltas changed and get new actions
-        action_A = State.get_action_for_delta(state,deltaA, mdp)
-        action_B = State.get_action_for_delta(state,deltaB, mdp)
-        action_C = State.get_action_for_delta(state,deltaC, mdp)
+        # # print(deltaA, deltaB, deltaC)
+        # # check if deltas changed and get new actions
+        # action_A = State.get_action_for_delta(state,deltaA, mdp)
+        # action_B = State.get_action_for_delta(state,deltaB, mdp)
+        # action_C = State.get_action_for_delta(state,deltaC, mdp)
 
-        return deltaA, deltaB, deltaC, action_A, action_B, action_C
+        return deltaA, deltaB, deltaC #, action_A, action_B, action_C
     
     def check_deltas(state, deltaA, deltaB, deltaC, mdp):
         minimum = 0
@@ -292,11 +292,10 @@ class State:
             raise ValueError
         deltas = [deltaA, deltaB, deltaC]
         sum_deltas = np.sum(deltas)
-        # print(sum_deltas)
+        
         # print(sum_deltas)
         if minimum <= state.battery + sum_deltas <= maximum:
-            # print(state.battery + sum_deltas)
-            # print("in if")
+            
             return deltas[0], deltas[1], deltas[2]
         
         # deltas = [deltaA, deltaB] if state.battery + sum_deltas > maximum else deltas
@@ -305,55 +304,68 @@ class State:
             #print("in while")
             
             for counter in range(len(deltas)):
+                # CHARGING
                 if state.battery + sum_deltas > maximum:
-                    # print("first")
-                    i = random.randint(0,1)
-                    # print(i)
-                    # print(deltas)
+                    
+                    # get_mins returns index of minimum value
+                    i = random.choice(State.get_max(deltas))
+                    
                     delta = deltas[i]
-                    #print(delta)
+                    
                     if delta > 0:
-                        reduction = mdp.charge_low # random.choice([5, 10]) if state.battery + sum_deltas - maximum >= 10 else 5
+                        reduction = mdp.charge_low
                         # print(state.battery + sum_deltas - maximum)
                         if delta >= reduction:
-                            # print(reduction)
+                            
                             deltas[i] -= reduction
                             sum_deltas -= reduction
 
                 else:
                     # print("second")
-                    i = random.choice([0,1,2])
+                    # chooses minimum values from deltas
+                    i = random.choice(State.get_mins(deltas))
                     delta = deltas[i]
-                    # print(delta)
-                    # print(i)
+                    
                     if delta < 0:
                         # print("second increase")
                         increase = mdp.discharge_low
+                        # print(deltas)
+                        # print(increase)
                         if delta <= -increase:
                             deltas[i] += increase
+                            
                             sum_deltas += increase
                 
                 if minimum <= state.battery + sum_deltas <= maximum:
                     break
 
         
-        deltaC = deltas[2] if len(deltas) == 3 else deltaC
+        deltaC = deltas[2] 
         deltaA = deltas[0]
         deltaB = deltas[1]
         return deltaA, deltaB, deltaC
 
-
+    # checks if any element is equal to the minimum
+    def get_mins(deltas):
+        minimum = min(deltas)
+        indexes = [i for i, value in enumerate(deltas) if value == minimum]
+        return indexes
+    def get_max(deltas):
+        maximum = max(deltas)
+        indexes = [i for i, value in enumerate(deltas) if value == maximum]
+        return indexes
+    
     def get_next_battery(self, action_A, action_B, action_C, mdp):
-        deltaA, deltaB, deltaC, new_A, new_B, new_C = self.check_actions(action_A, action_B, action_C, mdp)
+        deltaA, deltaB, deltaC = self.check_actions(action_A, action_B, action_C, mdp)
         return self.battery + (deltaA + deltaB + deltaC)
     
 
 class Reward:
     # returns reward and new action if chosen action was not possible
     def get_reward(state_A, state_B, state_C, action_A, action_B, action_C, mdp):
-        deltaA, deltaB, deltaC, new_A, new_B, new_C = State.check_actions(state_A, action_A, action_B, action_C, mdp)
+        deltaA, deltaB, deltaC = State.check_actions(state_A, action_A, action_B, action_C, mdp)
         
-        return new_A, Reward.calc_reward(state_A, deltaA, mdp), new_B, Reward.calc_reward(state_B, deltaB, mdp), new_C, Reward.calc_reward(state_C, deltaC, mdp)
+        return Reward.calc_reward(state_A, deltaA, mdp), Reward.calc_reward(state_B, deltaB, mdp), Reward.calc_reward(state_C, deltaC, mdp)
     
     def calc_reward(state, delta, mdp):
         # max_loss only if charging and available does not cover production
@@ -363,17 +375,17 @@ class Reward:
             return - np.abs(state.p - delta - state.c)
     
     def get_cost(state_A, state_B, state_C, action_A, action_B, action_C, mdp):
-        deltaA, deltaB, deltaC, new_A, new_B, new_C = State.check_actions(state_A, action_A, action_B, action_C, mdp)
+        deltaA, deltaB, deltaC = State.check_actions(state_A, action_A, action_B, action_C, mdp)
         
         return Reward.calc_cost(state_A, deltaA), Reward.calc_cost(state_B, deltaB), Reward.calc_cost(state_C, deltaC)
     
     def calc_cost(state, delta):
         return min(state.p - delta - state.c, 0)
 
-# mdp = MDP(1000, 1000, 500, 500,6000, 5,5)
-# # 1148.0,1148.0,388.0,5393.0,4314.0,0
-# s_A = State(1148,1000, 1000, 6000, 13, mdp)
-# print(s_A.check_deltas(-1000,-500,-500, mdp))
+mdp = MDP(1000, 500, 500, 250,6000, 5,5)
+# 1148.0,1148.0,388.0,5393.0,4314.0,0
+s_A = State(1148,1000, 250, 1000, 13, mdp)
+print(s_A.check_deltas(-250,-500,-250, mdp))
 # s_B = State(1148, 4314, 5, 4000, 13, mdp)
 # s_C = State(388, 0, 5, 0, 13, mdp)
 # print(s_A.check_actions("discharge_high", "charge_high", "do nothing", mdp))

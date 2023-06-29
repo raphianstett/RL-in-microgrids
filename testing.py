@@ -261,7 +261,7 @@ print(len(unique))
 # reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
 
 
-Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,2000, mdp)
+Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,1000, mdp)
 
 reward1, policy1, battery_states1, dis, loss, visited_states = mdp.find_policy(Q1, test_data)
 

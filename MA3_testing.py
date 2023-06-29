@@ -32,7 +32,7 @@ mdp = MDP(1000, 1000, 500, 500, 12000, 7,7)
 # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(df_bs_B,500, mdp_B)
 # reward_B, policy_B, battery_B, dis_B, loss_B, states_B = SMDP.find_policy(mdp_B, Q, df_bs_B)
 
-Q_A,Q_B,Q_C, rewards_per_episode, changed, all_rewards, battery = MA_QLearning.iterate(df_training,500, mdp)
+Q_A,Q_B,Q_C, rewards_per_episode, changed, all_rewards, battery = MA_QLearning.iterate(df_training,10000, mdp)
 
 print("actions A changed with check actions: " + str(changed))
 # print(all_rewards)
@@ -66,6 +66,14 @@ print("without battery A: " + str(mdp.get_total_costs(test["Production_A"] - tes
 print("without battery B: " + str(mdp.get_total_costs(test["Production_B"] - test["Consumption_B"])))
 print("without battery C: " + str(- np.sum(test["Consumption_C"])))
 
-plt.plot(battery_A[:240], color = "red")
-plt.plot(battery_B[:240], color = "green")
+
+plt.plot(test["Production_A"] - test["Consumption_A"][:240], color = "grey", linestyle = "dashdot")
+plt.plot(test["Production_B"] - test["Consumption_B"][:240], color = "lightgrey", linestyle = "dashdot")
+plt.plot(battery_A[:240], color = "green")
 plt.show()
+
+plt.plot(test["Production_A"] - test["Consumption_A"][1000:1240], color = "grey", linestyle = "dashdot")
+plt.plot(test["Production_B"] - test["Consumption_B"][1000:1240], color = "lightgrey", linestyle = "dashdot")
+plt.plot(battery_A[1000:1240], color = "green")
+plt.show()
+

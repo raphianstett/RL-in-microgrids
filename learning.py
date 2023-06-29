@@ -22,7 +22,7 @@ class QLearning:
         gamma = 0.9
 
         #learning rate
-        lr = 0.7
+        lr = 0.5
 
         rewards_per_episode = []
         all_rewards = []

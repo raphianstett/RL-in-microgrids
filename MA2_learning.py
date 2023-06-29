@@ -1,13 +1,6 @@
-import environment
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
 from environment import State
 from MA2_environment import Reward
-from MA2_environment import MDP
-
-from MA_data import Data
 
 class MA_QLearning:
 # define parameters for q-learning
@@ -27,7 +20,7 @@ class MA_QLearning:
         gamma = 0.8
 
         #learning rate
-        lr = 0.8
+        lr = 0.5
 
         rewards_per_episode = []
         all_rewards = []
@@ -42,9 +35,9 @@ class MA_QLearning:
         Q_B = np.zeros((mdp_B.n_states, mdp_B.n_actions))
         
         # initialize the first state of the episode
-        state_A = State(data["Consumption_A"][0], data["Production_A"][0], 20, data["Production_A"][1] ,data["Time"][0], mdp_A)
-        state_B = State(data["Consumption_B"][0], data["Production_B"][0], 20, data["Production_B"][1] ,data["Time"][0], mdp_B)
-            
+        state_A = State(data["Consumption_A"][0], data["Production_A"][0], 2000, data["Production_A"][1] ,data["Time"][0], mdp_A)
+        state_B = State(data["Consumption_B"][0], data["Production_B"][0], 2000, data["Production_B"][1] ,data["Time"][0], mdp_B)
+        l = len(data["Consumption_A"])
             
         for e in range(n_episodes):
             
@@ -71,18 +64,20 @@ class MA_QLearning:
                 
                 # run the chosen action and return the next state and the reward for the action in the current state.
                 reward_A = Reward.get_reward(state_A, state_B, action_A, action_B, mdp_A, mdp_B)
-                # reward_A = Reward.get_reward(state_A, action_A, mdp_A)
                 reward_B = Reward.get_reward(state_B, state_A, action_B, action_A, mdp_B, mdp_A)
                 
-                # reward_B = Reward.get_reward(state_B, action_B,mdp_B)
-                
-                next_state_A = State.get_next_state(state_A, action_A, data["Consumption_A"][(i+1)%len(data["Consumption_A"])], data["Production_A"][(i+1)%len(data["Consumption_A"])], data["Production_A"][(i+2)%len(data["Consumption_A"])], data["Time"][(i+1)%len(data["Consumption_A"])], mdp_A)
-                next_state_B = State.get_next_state(state_B, action_B, data["Consumption_B"][(i+1)%len(data["Consumption_B"])], data["Production_B"][(i+1)%len(data["Consumption_B"])], data["Production_B"][(i+2)%len(data["Consumption_B"])], data["Time"][(i+1)%len(data["Consumption_B"])], mdp_B)
 
-    
+
+                next_state_A = State.get_next_state(state_A, action_A, data["Consumption_A"][(i+1)%l], data["Production_A"][(i+1)%l], data["Production_A"][(i+2)%l], data["Time"][(i+1)%l], mdp_A)
+                next_state_B = State.get_next_state(state_B, action_B, data["Consumption_B"][(i+1)%l], data["Production_B"][(i+1)%l], data["Production_B"][(i+2)%l], data["Time"][(i+1)%l], mdp_B)
+
+                # get max expected future reward (only already explored states are included)
+                max_next_A = mdp_A.get_best_next(Q_A[State.get_id(next_state_A, mdp_A),:])
+                max_next_B = mdp_B.get_best_next(Q_B[State.get_id(next_state_B, mdp_B),:])
+              
                 # update Q-tables with Bellman equation
-                Q_A[state_A_id, action_A_id] = (1-lr) * Q_A[state_A_id, action_A_id] + lr*(reward_A + gamma*max(Q_A[State.get_id(next_state_A, mdp_A),:]) - Q_A[state_A_id, action_A_id])
-                Q_B[state_B_id, action_B_id] = (1-lr) * Q_B[state_B_id, action_B_id] + lr*(reward_B + gamma*max(Q_B[State.get_id(next_state_B, mdp_B),:]) - Q_B[state_B_id, action_B_id])
+                Q_A[state_A_id, action_A_id] = (1-lr) * Q_A[state_A_id, action_A_id] + lr*(reward_A + gamma*max_next_A - Q_A[state_A_id, action_A_id])
+                Q_B[state_B_id, action_B_id] = (1-lr) * Q_B[state_B_id, action_B_id] + lr*(reward_B + gamma*max_next_B - Q_B[state_B_id, action_B_id])
 
                 # sum reward
                 total_reward = total_reward + reward_A + reward_B
