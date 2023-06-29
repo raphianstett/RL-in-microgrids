@@ -7,14 +7,14 @@ import random
 
 class MDP:
     # initialize MDP
-    def __init__(self, max_charge, max_discharge, discharge_low, charge_low, max_battery, bins_cons, bins_prod):
+    def __init__(self, max_charge, max_discharge, charge_low, discharge_low, max_battery, bins_cons, bins_prod):
         
 
         self.bins_cons = bins_cons
         consumption_discr = [["low", "average", "high"],
                             ["very low", "low", "average", "high", "very high"],
-                            ["low", "very low", "low", "moderately low" "average", "moderalety high", "high", "very high"],
-                            ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]]
+                            ["very low", "low", "moderately low", "average", "moderately high", "high", "very high"],
+                            ["extremely low", "very low", "low", "moderately low","average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]]
         idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
         self.consumption = consumption_discr[idx_c]
         
@@ -103,14 +103,14 @@ class MDP:
     def get_consumption_seven(self,c):
         bins = [0.0, 196.0, 231.0, 278.0, 329.0, 382.0, 478.0, 2817]
         # bins = [0, 402, 804, 1206, 1608, 2010, 2412, 2820]
-        cons = ["very low", "low", "moderately low","average", "moderalety high", "high", "very high"]
+        cons = ["very low", "low", "moderately low","average", "moderately high", "high", "very high"]
         intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right')]
         return self.get_label_for_value(intervals, cons, c)
     
     # bins: [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
     def get_consumption_ten(self,c):
         bins = [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
-        cons = ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]
+        cons = ["extremely low", "very low", "low", "moderately low","average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]
         intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right')]
         return self.get_label_for_value(intervals, cons, c)
 
@@ -171,13 +171,14 @@ class MDP:
     def get_best_action(self,q_values):
         
         min_value = min(q_values)
+        #print(q_values)
         q_values = [value if value != 0 else (min_value -1) for value in q_values]
-        # if len(q_values)== 0:
-        #     return 2
         max_value = max(q_values)
         if all(q == q_values[0] for q in q_values) or len(q_values) == 0:
-            return random.choice([0,1,2,3,4])#, q_values
+            return random.choice([0,1,2,3,4]) if len(q_values) == 5 else random.choice([0,1,2])#, q_values
         indices = [index for index, value in enumerate(q_values) if value == max_value]
+        #print(indices)
+        
         return random.choice(indices)#, q_values
     
     # total cost function after applying learned policy
@@ -187,7 +188,7 @@ class MDP:
             
             return np.sum(rewards)
 
-                    
+class Policy:                
     # function to find policy after training the RL agent
     def find_policies(self, Q_A, Q_B, Q_C, dat):
         costs_A = []
@@ -202,9 +203,9 @@ class MDP:
         discharged = 0
         loss = 0
         
-        state_A = State(dat["Consumption_A"][0], dat["Production_A"][0], 20, dat["Production_A"][1], dat["Time"][0], self)
-        state_B = State(dat["Consumption_B"][0], dat["Production_B"][0], 20, dat["Production_B"][1], dat["Time"][0], self)
-        state_C = State(dat["Consumption_C"][0], dat["Production_C"][0], 20, dat["Production_C"][1], dat["Time"][0], self)
+        state_A = State(dat["Consumption_A"][0], dat["Production_A"][0], 6000, dat["Production_A"][1], dat["Time"][0], self)
+        state_B = State(dat["Consumption_B"][0], dat["Production_B"][0], 6000, dat["Production_B"][1], dat["Time"][0], self)
+        state_C = State(dat["Consumption_C"][0], dat["Production_C"][0], 6000, dat["Production_C"][1], dat["Time"][0], self)
                                       
         for i in range(len(dat["Consumption_A"])):
             
@@ -291,11 +292,11 @@ class State:
             raise ValueError
         deltas = [deltaA, deltaB, deltaC]
         sum_deltas = np.sum(deltas)
-        print(sum_deltas)
+        # print(sum_deltas)
         # print(sum_deltas)
         if minimum <= state.battery + sum_deltas <= maximum:
             # print(state.battery + sum_deltas)
-            print("in if")
+            # print("in if")
             return deltas[0], deltas[1], deltas[2]
         
         # deltas = [deltaA, deltaB] if state.battery + sum_deltas > maximum else deltas
@@ -327,7 +328,7 @@ class State:
                     # print(i)
                     if delta < 0:
                         # print("second increase")
-                        increase = mdp.discharge_low # random.choice([5, 10]) if state.battery + sum_deltas <= -10 else 5
+                        increase = mdp.discharge_low
                         if delta <= -increase:
                             deltas[i] += increase
                             sum_deltas += increase

@@ -39,9 +39,9 @@ training_data, test_data = RealData.split_data(summer_data, 7)
 
 mdp_3 = MDP(1000, 1000, 500, 500, 6000, 3,3)
 mdp_5 = MDP(1000, 1000, 500, 500, 6000, 5,5)
-mdp_7 = MDP(1000, 500, 200, 200, 4000, 7,7)
-mdp_10 = MDP(1000, 500, 200, 200, 4000, 10,10)
-mdp = mdp_10
+mdp_7 = MDP(1000, 500, 500, 200, 4000, 7,7)
+mdp_10 = MDP(1000, 500, 500, 200, 4000, 10,10)
+mdp = mdp_7
 mdp_d = dMDP(1000, 500, 200, 500, 4000, 10, 10)
 
 
@@ -261,7 +261,7 @@ print(len(unique))
 # reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
 
 
-Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,1000, mdp)
+Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,2000, mdp)
 
 reward1, policy1, battery_states1, dis, loss, visited_states = mdp.find_policy(Q1, test_data)
 
@@ -323,5 +323,5 @@ def data_to_states(mdp, data):
     return Counter(states)
 # print(len(Counter(baseline_states)))
 #print(baseline_states[:100])
-plt.hist(baseline_actions)
-plt.show()
+# plt.hist(baseline_actions)
+# plt.show()

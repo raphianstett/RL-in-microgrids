@@ -40,6 +40,7 @@ class MDP:
 
         # action space  
         self.action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge_high"]
+
         self.n_actions = len(self.action_space)
         self.discharge_high = max_discharge
         self.discharge_low = discharge_low #500
@@ -63,10 +64,10 @@ class MDP:
 
         self.n_time = len(self.time)
         self.n_states = self.n_consumption * self.n_production * self.n_battery * self.n_time * self.n_pred_production
-        print("states " + str(self.n_states))
-        print("battery: " + str(self.n_battery))
-        print("consumption: " + str(self.n_consumption))
-        print("production: " + str(self.n_production))
+        # print("states " + str(self.n_states))
+        # print("battery: " + str(self.n_battery))
+        # print("consumption: " + str(self.n_consumption))
+        # print("production: " + str(self.n_production))
         
 
 
@@ -432,8 +433,15 @@ def count_occurences(data):
 # very high very high 6.0 very high 10
 
 # # print(State.get_id(s))
-# mdp = MDP(1000, 1000, 500, 500, 6000, 10,10)
+mdp = MDP(1000, 500, 500, 200, 4000, 7,7)
 # # # s = State(305.0, 119.0, 1000, 3300, 23, mdp)
 # # # print(s.get_id(mdp))
 # q = [-1, -2,0,-1,-2]
 # print(MDP.get_best_next(mdp, q))
+training, test = RealData.split_data(RealData.get_real_data(), 7)
+s_training = data_to_states(mdp, training)
+s_test = data_to_states(mdp, test)
+
+unique_tuples = [t for t in s_training if (t not in s_test)]
+print(unique_tuples)
+print(len(unique_tuples))

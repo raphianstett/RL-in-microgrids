@@ -13,16 +13,16 @@ class QLearning:
         exploration_proba = 1
 
         #exploartion decreasing decay for exponential decreasing
-        exploration_decreasing_decay = 10/n_episodes #4 / n_episodes
+        exploration_decreasing_decay = 4/n_episodes #4 / n_episodes
 
         # minimum of exploration proba
         min_exploration_proba = 0.05
 
         #discounted factor
-        gamma = 0.8
+        gamma = 0.9
 
         #learning rate
-        lr = 0.5
+        lr = 0.7
 
         rewards_per_episode = []
         all_rewards = []
@@ -68,7 +68,7 @@ class QLearning:
                 max_next = mdp.get_best_next(Q_table[State.get_id(next_state, mdp),:])
 
                 # update Q-table with Bellman equation
-                Q_table[state_id,action_id] = (1-lr) * Q_table[state_id,action_id] + lr*(reward + gamma*max_next - Q_table[state_id,action_id])
+                Q_table[state_id,action_id] = (1-lr) * Q_table[state_id,action_id] + lr* (reward + gamma*max_next - Q_table[state_id,action_id])
                 
                 # sum reward
                 total_episode_reward = total_episode_reward + reward

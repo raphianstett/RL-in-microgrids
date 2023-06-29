@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from MA2_environment import MDP
 from MA3_environment import Reward
 from MA3_environment import State
 from environment import State as State2
@@ -14,19 +13,19 @@ class MA_QLearning:
         print("####GO#####")
 
         #initialize the exploration probability to 1
-        exploration_proba = 0.1
+        exploration_proba = 1
 
         #exploartion decreasing decay for exponential decreasing
-        # exploration_decreasing_decay = 3/n_episodes #4 / n_episodes
+        exploration_decreasing_decay = 4/n_episodes #4 / n_episodes
 
         # minimum of exploration proba
-        min_exploration_proba = 0.1
+        min_exploration_proba = 0.05
 
         #discounted factor
         gamma = 0.8
 
         #learning rate
-        lr = 0.8
+        lr = 0.5
 
         rewards_per_episode = []
         all_rewards = []
@@ -41,9 +40,9 @@ class MA_QLearning:
         Q_B = np.zeros((mdp.n_states, mdp.n_actions))
         Q_C = np.zeros((mdp.n_states, mdp.n_actions_c))
         # initialize the first state of the episode
-        state_A = State(data["Consumption_A"][0], data["Production_A"][0], 20, data["Production_A"][1] ,data["Time"][0], mdp)
-        state_B = State(data["Consumption_B"][0], data["Production_B"][0], 20, data["Production_B"][1] ,data["Time"][0], mdp)
-        state_C = State(data["Consumption_C"][0], data["Production_C"][0], 20, data["Production_C"][1] ,data["Time"][0], mdp)
+        state_A = State(data["Consumption_A"][0], data["Production_A"][0], 6000, data["Production_A"][1] ,data["Time"][0], mdp)
+        state_B = State(data["Consumption_B"][0], data["Production_B"][0], 6000, data["Production_B"][1] ,data["Time"][0], mdp)
+        state_C = State(data["Consumption_C"][0], data["Production_C"][0], 6000, data["Production_C"][1] ,data["Time"][0], mdp)
             
             
         for e in range(n_episodes):
@@ -95,9 +94,9 @@ class MA_QLearning:
                 next_state_C = State2.get_next_state(state_C, action_C, data["Consumption_C"][(i+1)%len(data["Consumption_C"])], data["Production_C"][(i+1)%len(data["Consumption_C"])], data["Production_C"][(i+2)%len(data["Consumption_C"])], data["Time"][(i+1)%len(data["Consumption_C"])], mdp)
 
                 # get best next expected reward (only from already explored states)
-                max_next_A = mdp.get_best_next(Q_A[State.get_id(next_state_A, mdp),:])
-                max_next_B = mdp.get_best_next(Q_B[State.get_id(next_state_B, mdp),:])
-                max_next_C = mdp.get_best_next(Q_C[State.get_id(next_state_C, mdp),:])
+                max_next_A = mdp.get_best_next(Q_A[State2.get_id(next_state_A, mdp),:])
+                max_next_B = mdp.get_best_next(Q_B[State2.get_id(next_state_B, mdp),:])
+                max_next_C = mdp.get_best_next(Q_C[State2.get_id(next_state_C, mdp),:])
 
                 # update Q-tables with Bellman equation
                 Q_A[state_A_id, action_A_id] = (1-lr) * Q_A[state_A_id, action_A_id] + lr*(reward_A + gamma*max_next_A - Q_A[state_A_id, action_A_id])
@@ -109,7 +108,7 @@ class MA_QLearning:
                 
                 # all_rewards.append(reward)
                 # chosen_actions.append(mdp.get_action_id(action))
-                # battery.append(current_state.battery)
+                battery.append(state_A.battery)
                 # states.append((current_state.consumption, current_state.production, current_state.battery, current_state.time))
                 # states_id.append(State.get_id(current_state, mdp))
                 # states.append(current_state)
@@ -120,10 +119,10 @@ class MA_QLearning:
                 state_C = next_state_C
 
             # update the exploration proba using exponential decay formula after each episode
-            # exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
+            exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
             rewards_per_episode.append(total_reward)
             print(e)
         
-        return Q_A, Q_B,Q_C, rewards_per_episode, changed, all_rewards #, all_rewards, chosen_actions, states_id, states, battery
+        return Q_A, Q_B,Q_C, rewards_per_episode, changed, all_rewards, battery #, all_rewards, chosen_actions, states_id, states, battery
 
 

@@ -100,11 +100,13 @@ class RealData:
         grouped = df.groupby(df['Date'].dt.to_period('M'))
         n = days * 24
         new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
-        new_df = new_df.reset_index(drop=True)
+        
 
         # Remove the extracted rows from the original DataFrame
         df = df.drop(new_df.index)
-
+        
+        # reset index now
+        new_df = new_df.reset_index(drop=True)
         # Reset the index of the updated DataFrame
         df = df.reset_index(drop=True)
         return df, new_df
@@ -145,6 +147,6 @@ class RealData:
 training_data, test = RealData.split_data(RealData.get_real_data(), 7)
 # print(training_data)
 # print(training_data["Production"] - training_data["Consumption"])
-data = RealData.get_real_data()
+
 # print(RealData.get_summer(data)[:6000])
 
