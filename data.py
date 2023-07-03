@@ -138,8 +138,8 @@ class RealData:
         return df
     
     def get_winter(df):
-        df.drop(range(0,2928), inplace = True)
-        df.drop(range(7299), len(df))
+        df.drop(df.index[0:2928], inplace = True)
+        df.drop(df.index[4368: len(df)], inplace = True)
         df.reset_index(drop = True, inplace = True)
         return df
 
