@@ -170,4 +170,14 @@ class Data_3:
         dat['Date'] = pd.to_datetime(dat['Date'])
         dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Consumption_C', 'Production_A','Production_B','Production_C', 'is weekend', 'Date','Time'])        
         return dat
+    def plot_differences(df_training):
+        d_A = df_training["Production_A"] - df_training["Consumption_A"]
+        d_B = df_training["Production_B"] - df_training["Consumption_B"]
+        d_C = df_training["Consumption_C"] 
+
+        plt.plot(d_A[:186], color = "red")
+        plt.plot(d_B[:186], color = "blue")
+        plt.plot(d_C[:186], color ="green")
+
+        plt.show()
         

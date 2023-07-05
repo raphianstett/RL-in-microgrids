@@ -82,7 +82,7 @@ class QLearning:
             # update the exploration proba using exponential decay formula after each episode
             exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
             rewards_per_episode.append(total_episode_reward)
-            print(e) if e % 10 == 0  else None 
+            # print(e) if e % 10 == 0  else None 
         
         return Q_table, rewards_per_episode, all_rewards, chosen_actions, states_id, states, battery
 
@@ -98,7 +98,7 @@ class Baseline:
         
         for i in range(1,len(data["Consumption"])):
             
-            if current_state.p - current_state.c >= 1000 and current_state.battery + mdp.charge_high <= mdp.max_battery:
+            if current_state.p - current_state.c >= mdp.charge_high and current_state.battery + mdp.charge_high <= mdp.max_battery:
                 action = "charge_high"
                 # print("charge_high")
             elif current_state.p - current_state.c >= mdp.charge_low and current_state.battery + mdp.charge_low <= mdp.max_battery:

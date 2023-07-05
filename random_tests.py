@@ -70,4 +70,6 @@ plt.legend()
 
 # print(len(np.arange(0.1,1.1,0.1)))
 lrs = np.arange(0.1,1.1,0.1)
-print(str(lrs))
+print(np.arange(12,200,24))
+print(np.arange(0,8,1))
+#print(str(lrs))

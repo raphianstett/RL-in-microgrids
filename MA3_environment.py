@@ -259,11 +259,10 @@ class State:
         
     def get_next_state(self, new_c, new_p, new_pred, new_time, mdp, action_A, action_B, action_C):
         next_battery = self.get_next_battery(action_A, action_B, action_C, mdp)
+        print("current: " + str(self.battery))
+        print("next: "+ str(next_battery))
         return State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
 
-    def build_next_state(self, new_c, new_p, new_pred, new_time, mdp, next_battery):
-        next_state = State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
-        return next_state
     
     def get_battery_value(action, mdp):
         return mdp.battery_steps[mdp.action_space.index(action)]
@@ -286,13 +285,15 @@ class State:
         return deltaA, deltaB, deltaC #, action_A, action_B, action_C
     
     def check_deltas(state, deltaA, deltaB, deltaC, mdp):
+        
         minimum = 0
         maximum = mdp.max_battery
         if deltaC > 0:
             raise ValueError
         deltas = [deltaA, deltaB, deltaC]
         sum_deltas = np.sum(deltas)
-        
+        print("in check deltas:" + str(deltas))
+        print("battery: " + str(state.battery))
         # print(sum_deltas)
         if minimum <= state.battery + sum_deltas <= maximum:
             
@@ -382,11 +383,15 @@ class Reward:
     def calc_cost(state, delta):
         return min(state.p - delta - state.c, 0)
 
-mdp = MDP(1000, 500, 500, 250,6000, 5,5)
-# 1148.0,1148.0,388.0,5393.0,4314.0,0
-s_A = State(1148,1000, 250, 1000, 13, mdp)
-print(s_A.check_deltas(-250,-500,-250, mdp))
-# s_B = State(1148, 4314, 5, 4000, 13, mdp)
+# mdp = MDP(1000, 500, 500, 250,6000, 5,5)
+# # # 1148.0,1148.0,388.0,5393.0,4314.0,0
+# s_A = State(1148, 1000, 100, 1000, 13, mdp)
+# # s_B = State(1148, 4314, 1000, 4000, 13, mdp)
+# # s_C = State(1148, 0, 1000, 0, 13, mdp)
+# # s_A2 = s_A.get_next_state(2000,1000,1000,14,mdp,"discharge_high", "discharge_high", "do nothing")
+# # print(s_A2.battery, s_A2.c, s_A2.p)
+# print(s_A.check_deltas(-250,-500,-250, mdp))
+
 # s_C = State(388, 0, 5, 0, 13, mdp)
 # print(s_A.check_actions("discharge_high", "charge_high", "do nothing", mdp))
 # print(Reward.get_reward(s_A, s_B, s_C, "charge_high", "charge_high", "do nothing", mdp))
