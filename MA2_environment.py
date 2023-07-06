@@ -46,7 +46,7 @@ class MDP:
         self.n_pred_production = len(self.production)
         self.n_battery = self.get_battery_id(self.max_battery) + 1
 
-        self.n_time = len(self.time)
+        self.n_time = 24
         self.n_states = self.n_consumption * self.n_production * self.n_battery * self.n_time * self.n_pred_production
         # print("states " + str(self.n_states))
         # print("battery: " + str(self.n_battery))
@@ -196,9 +196,21 @@ class StateTransition:
 
         return next_state
 
+class dStateTransition:
+      # only battery has to be updated
+    def get_next_state(state, action, new_c, new_p, new_time, mdp):
+        delta = Reward.get_battery_value(action, mdp)
+        next_battery = state.battery
+        if 0 <= state.battery + delta <= mdp.max_battery:
+            next_battery = state.battery + delta
+        next_state = State(new_c, new_p, int(next_battery), new_time, mdp)
+
+        return next_state
+
+
 class Policy:                
     # function to find policy after training the RL agent
-    def find_policies(Q_A, Q_B, dat, mdp_A, mdp_B):
+    def find_policies(Q_A, Q_B, data, mdp_A, mdp_B):
         costs_A = []
         costs_B = []
         policy_A = []
@@ -209,15 +221,17 @@ class Policy:
         discharged = 0
         loss = 0
         
-        state_A = State(dat["Consumption_A"][0], dat["Production_A"][0], 2000, dat["Production_A"][1], dat["Time"][0], mdp_A)
-        state_B = State(dat["Consumption_B"][0], dat["Production_B"][0], 2000, dat["Production_B"][1], dat["Time"][0], mdp_B)
-                                      
-        for i in range(len(dat["Consumption_A"])):
+        state_A = State(data[0,0], data[0,2], 2000, data[1,2] ,data[0,4], mdp_A)
+        
+        state_B = State(data[0,1], data[0,3], 2000, data[1,3] ,data[0,4], mdp_A)
+        l = data.shape[0]
+        
+        for i in range(l):
             
             # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
             # print(state_A.consumption, state_A.production, state_A.predicted_prod, state_A.battery)
-            action_A = mdp_A.action_space[mdp_A.get_best_action(Q_A[State.get_id(state_A, mdp_A),:])]
-            action_B = mdp_B.action_space[mdp_B.get_best_action(Q_B[State.get_id(state_B, mdp_B),:])]
+            action_A = mdp_A.action_space[mdp_A.get_best_action(Q_A[int(State.get_id(state_A, mdp_A)),:])]
+            action_B = mdp_B.action_space[mdp_B.get_best_action(Q_B[int(State.get_id(state_B, mdp_B)),:])]
             
             # print("State: " + str(State.get_id(current_state))
             # print("Action ID: " + str(MDP.get_action_id(action)))
@@ -228,16 +242,14 @@ class Policy:
             costs_A.append(- cost_A)
             costs_B.append(- cost_B)
             
-            
             policy_A.append(action_A)
             policy_B.append(action_B)
             
             battery_A.append(state_A.battery)
             battery_B.append(state_B.battery)
-            l = len(dat["Consumption_A"])
-            state_A = StateTransition.get_next_state(state_A, action_A, dat["Consumption_A"][i%l], dat["Production_A"][i%l], dat["Production_A"][(i+1)%l], dat["Time"][i%l], mdp_A)
-            state_B = StateTransition.get_next_state(state_B, action_B, dat["Consumption_B"][i%l], dat["Production_B"][i%l], dat["Production_B"][(i+1)%l], dat["Time"][i%l], mdp_B)
-
+            
+            state_A = StateTransition.get_next_state(state_A, action_A, data[i,0], data[i,2], data[(i+1)%l,2] ,data[i,4], mdp_A)
+            state_B = StateTransition.get_next_state(state_B, action_B, data[i,1], data[i,3], data[(i+1)%l,3] ,data[i,4], mdp_B)
         return costs_A, costs_B,  policy_A, policy_B, battery_A, battery_B
     
 class Reward:

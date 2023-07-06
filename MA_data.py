@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class Data_2:
-    def get_data(self):
+    def get_data():
         dat = pd.read_csv("MA_data.csv")
         # print(dat[:100])
         dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'is weekend': dat["is_weekend"], 'Date': dat["Date"],'Time': dat["Time"]}
@@ -26,7 +26,51 @@ class Data_2:
         df.to_csv("MA_data.csv", index = False)
         # print(df)
 
-    def get_days(self):
+    def get_training_test(days, get_summer, get_winter):
+        df = Data_2.get_data()
+        if get_summer:
+            df = RealData.get_summer_pd(df)
+        if get_winter:
+            df = RealData.get_winter_pd(df)
+        df['Date'] = pd.to_datetime(df['Date'])
+        grouped = df.groupby(df['Date'].dt.to_period('M'))
+        n = days * 24
+        new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
+    
+        # Remove the extracted rows from the original DataFrame
+        df = df.drop(new_df.index)
+        
+        # reset index now
+        new_df = new_df.reset_index(drop=True)
+        # Reset the index of the updated DataFrame
+        df = df.reset_index(drop=True)
+        df = df.drop('Date', axis = 1)
+        new_df = new_df.drop('Date', axis = 1)
+        np.round(df).astype(int)
+        np.round(new_df).astype(int)
+        return df.to_numpy(), new_df.to_numpy()
+    
+    def split_data(df,days):
+        
+        df['Date'] = pd.to_datetime(df['Date'])
+        grouped = df.groupby(df['Date'].dt.to_period('M'))
+        n = days * 24
+        new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
+    
+        # Remove the extracted rows from the original DataFrame
+        df = df.drop(new_df.index)
+        
+        # reset index now
+        new_df = new_df.reset_index(drop=True)
+        # Reset the index of the updated DataFrame
+        df = df.reset_index(drop=True)
+        df = df.drop('Date', axis = 1)
+        new_df = new_df.drop('Date', axis = 1)
+        np.round(df).astype(int)
+        np.round(new_df).astype(int)
+        return df.to_numpy(), new_df.to_numpy()
+    
+    def get_days():
         start_date = '2021-06-01'
         end_date = '2022-05-31'
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
@@ -113,10 +157,10 @@ class Data_2:
         prod = [np.floor(x * scaling) for x in prod]
         return prod
 
-    def get_data_B(self):
-        dat = self.get_data()
+    def get_data_B():
+        dat = Data_2.get_data()
         dat_B = pd.DataFrame(dat, columns=['Consumption_B', 'Production_B', 'is weekend', 'Time']) 
-        dat_B['Date'] = self.get_days().repeat(24)
+        dat_B['Date'] = Data_2.get_days().repeat(24)
         dat_B = dat_B.rename(columns = {"Consumption_B" : "Consumption", "Production_B" : "Production"})
         return dat_B
         
@@ -180,4 +224,3 @@ class Data_3:
         plt.plot(d_C[:186], color ="green")
 
         plt.show()
-        

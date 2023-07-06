@@ -201,36 +201,22 @@ class MDP:
 
                     
     # function to find policy after training the RL agent
-    def find_policy(self, Q_table, dat):
+    def find_policy(self, Q_table, data):
         costs = []
         actions = []
         battery = []
-        states = []
-        discharged = 0
-        loss = 0
-        current_state = State(dat["Consumption"][0], dat["Production"][0], 2000, dat["Time"][0], self)
         
-        for i in range(len(dat["Consumption"])):
-            
-            # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
-            action = self.action_space[self.get_best_action(Q_table[State.get_id(current_state, self),:])]
-  
+        current_state = State(data[0,0], data[0,1], 2000, data[0,2], self)
+        l = data.shape[0]
+
+        for i in range(l):
+            action = self.action_space[self.get_best_action(Q_table[int(State.get_id(current_state, self)),:])]
             costs.append(State.get_cost(current_state,action, self))
             actions.append(action)
             battery.append(current_state.battery)
-            states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
+            current_state = State.get_next_state(current_state, action, data[i,0], data[i,1],data[i,2], self)
             
-            l = len(dat["Consumption"])
-            current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%l], dat["Production"][(i+1)%l], dat["Time"][(i+1)%l], self)
-            
-            # check amount of discharged energy
-            if action == "discharge_high" and current_state.battery - self.discharge_high >= 0:
-                    discharged += self.discharge_high
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-            if action == "discharge_low" and current_state.battery - self.discharge_low >= 0:
-                    discharged += self.discharge_low
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-        return costs, actions, battery, discharged, loss
+        return costs, actions, battery
 
     def iterate_q(Q_table, self):
         actions = []
@@ -291,7 +277,7 @@ class State:
         p = {"none": 0, "low": 1, "high": 2}[state.production]
         
         
-        return c * (mdp.n_production*mdp.n_battery*24) + p *(mdp.n_battery24) + mdp.get_battery_id(state.battery) * 24 + state.time
+        return c * (mdp.n_production*mdp.n_battery*24) + p *(mdp.n_battery*24) + mdp.get_battery_id(state.battery) * 24 + state.time
         
 
     def get_id_five(state, mdp):

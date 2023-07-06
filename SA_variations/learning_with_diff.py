@@ -31,15 +31,16 @@ class QLearning:
         Q_table = np.zeros((mdp.n_states, mdp.n_actions))
         
         # initialize the first state of the episode
-        current_state = State(data["Consumption"][0], data["Production"][0], 2000, data["Production"][1] ,data["Time"][0], mdp)
-        l = len(data["Consumption"])
+        current_state = State(data[0,0], data[0,1], 2000, data[0,2], mdp)
+        
+        l = data.shape[0]
             
         for e in range(n_episodes):
-            state_id = State.get_id(current_state, mdp)
+            state_id = int(State.get_id(current_state, mdp))
             #sum the rewards that the agent gets from the environment
             total_episode_reward = 0
             
-            for i in range(0, l): 
+            for i in range(l): 
                 
                 # exploration 
                 if np.random.uniform(0,1) < exploration_proba:
@@ -51,16 +52,16 @@ class QLearning:
                     a = Q_table[state_id,:]
                     action = mdp.action_space[mdp.get_best_action(a)]
                 
-                action_id = mdp.get_action_id(action)
+                action_id = int(mdp.get_action_id(action))
                 
 
                 # run the chosen action and return the next state and the reward for the action in the current state.
                 reward = State.get_reward(current_state, action, mdp)
 
-                next_state = State.get_next_state(current_state, action, data["Consumption"][(i+1)%l], data["Production"][(i+1)%l], data["Production"][(i+2)%l], data["Time"][(i+1)%l], mdp)
-
+                next_state = State.get_next_state(current_state, action, data[i,0], data[i,1] ,data[i,2], mdp)
+                
                 # get max expected future reward (only already explored states are included)
-                max_next = mdp.get_best_next(Q_table[State.get_id(next_state, mdp),:])
+                max_next = mdp.get_best_next(Q_table[int(State.get_id(next_state, mdp)),:])
 
                 # update Q-table with Bellman equation
                 Q_table[state_id,action_id] = (1-lr) * Q_table[state_id,action_id] + lr* (reward + gamma*max_next - Q_table[state_id,action_id])
@@ -77,14 +78,15 @@ class QLearning:
                 
                 # move to next state
                 current_state = next_state
-                state_id = State.get_id(current_state, mdp)
+                state_id = int(State.get_id(current_state, mdp))
+
 
             # update the exploration proba using exponential decay formula after each episode
             exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
             rewards_per_episode.append(total_episode_reward)
             # print(e) if e % 10 == 0 else None 
         
-        return Q_table, rewards_per_episode, all_rewards, chosen_actions, states_id, states, battery
+        return Q_table, rewards_per_episode
 
 
 class Baseline:
@@ -92,11 +94,12 @@ class Baseline:
         rewards = []
         states = []
         actions = []
-        diffs = []
+     
         battery = []
-        current_state = State(data["Consumption"][0], data["Production"][0], 2000,data["Production"][1], data["Time"][0], mdp)
+        current_state = State(data[0,1], data[0,2], 2000,data[0,3], mdp)
+        l = data.shape[0]
         
-        for i in range(1,len(data["Consumption"])):
+        for i in range(1,l):
             
             if current_state.p - current_state.c >= 1000 and current_state.battery + mdp.charge_high <= mdp.max_battery:
                 action = "charge_high"
@@ -120,10 +123,9 @@ class Baseline:
             actions.append(action)
             
             battery.append(current_state.battery)
-            diffs.append((current_state.c - current_state.p) >= mdp.discharge_high and current_state.battery - mdp.discharge_high >= 0)
+           
+            current_state = State.get_next_state(current_state, action, data[i,0], data[i,1] ,data[i,3], mdp)
+            ## print(current_state.consumption, current_state.production, current_state.battery,current_state.time)
 
-            current_state = State.get_next_state(current_state, action, data["Consumption"][i], data["Production"][i],data["Production"][(i+1)%len(data["Production"])], data["Time"][i], mdp)
-            # print(current_state.consumption, current_state.production, current_state.battery,current_state.time)
-
-        return rewards, states, actions, battery, diffs
+        return rewards, states, actions, battery
 

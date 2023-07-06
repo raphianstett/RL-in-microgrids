@@ -59,10 +59,15 @@ class RealData:
     def get_real_data():
         dat = pd.read_csv("household_with_pv_new.csv")
         dat = {'Consumption': dat["Consumption"], 'Production': dat["Production"], 'Time': dat["Time"], 'Date': dat["Date"], 'Purchased': dat["Purchased"]}
-        dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Time', 'Date', 'Purchased'])
+        dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Date', 'Time'])
         dat['Date'] = pd.to_datetime(dat['Date'])
         dat = RealData.mark_weekend_days(dat)
+        #dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Time', 'is_weekend'])
         return dat
+    def get_data():
+        dat = RealData.get_real_data()
+        dat = pd.DataFrame(dat, columns= ['Consumption', 'Production', 'Time'])
+        return dat.to_numpy()
     
     def cut_production(df):
         prod = df["Production"]
@@ -73,35 +78,20 @@ class RealData:
         df['is_weekend'] = df['Date'].apply(lambda x: int(x.weekday() >= 5))
         return df
 
-    def split_data_test(data, days): 
-        test_data = pd.DataFrame(columns = ['Consumption','Production', 'Time','Date','Purchased'], index = range(0,12*days*24))
-        days_in_month = np.array([30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30, 31])
-        for i in range(12):
-            for j in range(days*24):
-             
-                which = 0 if i == 0 else days_in_month[[*range(0,i,1)]].sum()
-                #print(which)
-                # print(days_in_month[[*range(0,i,1)]].sum())
-                #print([0,*range(0,i,1)])
-                idx = (which * 24 + j)
-                row = data.loc[idx]
-                #print(row)
-                test_data.loc[i * days * 24 + j] = row
-                data = data.drop(idx)
-            data = data.set_axis(range(0, len(data)), axis = 'index')
-            test_data = test_data.set_axis(range(0, len(test_data)), axis = 'index')    
-        return data, test_data
-
     def extract_days(group, days):
         return group.head(days)
 
-    def split_data(df, days):
+    def get_training_test(days, get_summer, get_winter):
+        df = RealData.get_real_data()
+        if get_summer:
+            df = RealData.get_summer_pd(df)
+        if get_winter:
+            df = RealData.get_winter_pd(df)
         df['Date'] = pd.to_datetime(df['Date'])
         grouped = df.groupby(df['Date'].dt.to_period('M'))
         n = days * 24
         new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
-        
-
+    
         # Remove the extracted rows from the original DataFrame
         df = df.drop(new_df.index)
         
@@ -109,7 +99,12 @@ class RealData:
         new_df = new_df.reset_index(drop=True)
         # Reset the index of the updated DataFrame
         df = df.reset_index(drop=True)
-        return df, new_df
+        df = df.drop('Date', axis = 1)
+        new_df = new_df.drop('Date', axis = 1)
+        np.round(df).astype(int)
+        np.round(new_df).astype(int)
+        
+        return df.to_numpy(), new_df.to_numpy()
 
    
 
@@ -132,21 +127,36 @@ class RealData:
             else: 
                 continue
         return p
-    def get_summer(df):
+    # function for pd dataframe
+    def get_summer_pd(df):
         df.drop(df.index[2928:7298], inplace=True)
         df.reset_index(drop = True, inplace = True)
         return df
     
-    def get_winter(df):
+    # function for numpy array
+    def get_summer(arr):
+        arr = np.delete(arr, np.s_[2928:7298], axis=0)
+        return arr
+
+    # function for pd dataframe
+    def get_winter_pd(df):
         df.drop(df.index[0:2928], inplace = True)
         df.drop(df.index[4368: len(df)], inplace = True)
         df.reset_index(drop = True, inplace = True)
         return df
+    
+    #function for numpy array
+
+    def get_winter(arr):
+        arr = np.delete(arr, np.s_[0:2928], axis=0)
+        arr = np.delete(arr, np.s_[4368:], axis=0)
+        return arr
+
 
 # month * days * hours
-training_data, test = RealData.split_data(RealData.get_real_data(), 7)
-# print(training_data)
+
+
 # print(training_data["Production"] - training_data["Consumption"])
 
-# print(RealData.get_summer(data)[:6000])
+#print(RealData.train])
 

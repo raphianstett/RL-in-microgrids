@@ -141,8 +141,9 @@ class MDP:
     def get_production_five(self, p):
         prod = ["none", "low", "average", "high", "very high"]
         intervals = [pd.Interval(left = 0, right = 0, closed = 'both'),pd.Interval(left = 0,right = 330, closed = 'right'), pd.Interval(left = 330,right =  1200, closed = 'right'), pd.Interval(left = 1200,right =  3200, closed = 'right'), pd.Interval(left = 3200,right =  7000, closed = 'right')]
-        return self.get_label_for_value(intervals, prod, p)
-
+        label = self.get_label_for_value(intervals, prod, p)
+        
+        return label
     # with 7 bins [0, 1.0, 171.0, 523.0, 1200.0, 2427.0, 4034.0]
     def get_production_seven(self,p):
         bins = [0, 1.0, 171.0, 523.0, 1200.0, 2427.0, 4034.0, 6070]
@@ -174,21 +175,15 @@ class MDP:
     # returns 2 (do nothing), if all q-values are the same
     
     def get_best_action(self,q_values):
-        # print(min(q_values))
-        # print(q_values[q_values == 0])
-        # q_values[q_values == 0] = min(q_values)
-        # print(q_values)
-        # print(np.argmax(q_values))
+       
         min_value = min(q_values)
-        #print(q_values)
+        
         q_values = [value if value != 0 else (min_value -1) for value in q_values]
         max_value = max(q_values)
         
-        # print("max value:" + str(max_value))
         if all(q == q_values[0] for q in q_values) or len(q_values) == 0:
             return random.choice([0,1,2,3,4])#, q_values
         indices = [index for index, value in enumerate(q_values) if value == max_value]
-        #print(indices)
         
         return random.choice(indices)#, q_values
         #return np.argmax(q_values) if max(q_values) != 0 else 2, q_values
@@ -209,41 +204,23 @@ class MDP:
 
                     
     # function to find policy after training the RL agent
-    def find_policy(self, Q_table, dat):
+    def find_policy(self, Q_table, data):
         costs = []
         actions = []
         battery = []
-        states = []
-        discharged = 0
-        loss = 0
-        current_state = State(dat["Consumption"][0], dat["Production"][0], 2000, dat["Production"][1], dat["Time"][0], self)
+       
+        current_state = State(data[0,0], data[0,1], 2000, data[1,1] ,data[0,2], self)
         
-        for i in range(len(dat["Consumption"])):
+        l = data.shape[0]
+        for i in range(l):
             
-            # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
-            action = self.action_space[self.get_best_action(Q_table[State.get_id(current_state, self),:])]
-            # print(Q_table[State.get_id(current_state, self),:])
-            # print(action)
-            # print("State: " + str(State.get_id(current_state))
-            # print("Action ID: " + str(MDP.get_action_id(action)))
-            # print("Q table: " + str(Q_table[State.get_id(current_state),]))
-            
+            action = self.action_space[self.get_best_action(Q_table[int(State.get_id(current_state, self)),:])]
             costs.append(State.get_cost(current_state,action, self))
             actions.append(action)
             battery.append(current_state.battery)
-            states.append((current_state.consumption, current_state.production, current_state.battery,current_state.time))
-            
-            l = len(dat["Consumption"])
-            current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%l], dat["Production"][(i+1)%l], dat["Production"][(i+2)%l], dat["Time"][(i+1)%l], self)
-            
-            # check amount of discharged energy
-            if action == "discharge_high" and current_state.battery - self.discharge_high >= 0:
-                    discharged += self.discharge_high
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-            if action == "discharge_low" and current_state.battery - self.discharge_low >= 0:
-                    discharged += self.discharge_low
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-        return costs, actions, battery, discharged, loss, states
+            current_state = State.get_next_state(current_state, action, data[i,0], data[i,1],data[(i+1)%l,1] ,data[i,2], self)
+        
+        return costs, actions, battery
 
     def iterate_q(Q_table, self):
         actions = []
@@ -269,6 +246,8 @@ class State:
         self.p = p
         self.pred = p_next # mdp.get_predicted_prod(p_next)
         self.predicted_prod = mdp.get_production(self.pred)
+        
+        
     
     # move to next state based on chosen action
     def get_battery_value(action, mdp):
@@ -310,6 +289,7 @@ class State:
     def get_id_five(state, mdp):
         c = {"very low": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.consumption]
         p = {"none": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.production]
+       
         pred = {"none": 0, "low": 1, "average": 2, "high": 3, "very high": 4}[state.predicted_prod]
 
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
@@ -439,10 +419,10 @@ mdp = MDP(1000, 500, 500, 200, 4000, 7,7)
 # # # print(s.get_id(mdp))
 # q = [-1, -2,0,-1,-2]
 # print(MDP.get_best_next(mdp, q))
-training, test = RealData.split_data(RealData.get_real_data(), 7)
-s_training = data_to_states(mdp, training)
-s_test = data_to_states(mdp, test)
+# training, test = RealData.split_data(RealData.get_real_data(), 7)
+# s_training = data_to_states(mdp, training)
+# s_test = data_to_states(mdp, test)
 
-unique_tuples = [t for t in s_training if (t not in s_test)]
+#unique_tuples = [t for t in s_training if (t not in s_test)]
 # print(unique_tuples)
 # print(len(unique_tuples))

@@ -13,7 +13,7 @@ from decimal import Decimal
 
 class MDP:
     # initialize MDP
-    def __init__(self, charge_high, discharge_high, charge_low,discharge_low, max_battery, bins_prod):
+    def __init__(self, charge_high, discharge_high, charge_low,discharge_low, max_battery):
         
 
         
@@ -24,13 +24,13 @@ class MDP:
         # idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
         # self.consumption = consumption_discr[idx_c]
         
-        self.bins_prod = bins_prod
-        production_discr = [["low","average", "high"],
-                            ["none", "low","average", "high", "very high"],
-                            ["none", "very low","low", "average_low", "average_high", "high", "very high"],
-                            ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]]
-        idx_p = int(np.floor(self.bins_prod/2) - 1) if self.bins_prod != 10 else 3
-        self.production = production_discr[idx_p]
+        # self.bins_prod = bins_prod
+        # production_discr = [["low","average", "high"],
+        #                     ["none", "low","average", "high", "very high"],
+        #                     ["none", "very low","low", "average_low", "average_high", "high", "very high"],
+        #                     ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]]
+        # idx_p = int(np.floor(self.bins_prod/2) - 1) if self.bins_prod != 10 else 3
+        # self.production = production_discr[idx_p]
         self.difference = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500", "5000"]
 
 
@@ -53,11 +53,11 @@ class MDP:
         # self.n_consumption = len(self.consumption)
         # self.n_production = len(self.production)
         self.n_diff = len(self.difference)
-        self.n_pred_production = len(self.production)
+        # self.n_pred_production = len(self.production)
         self.n_battery = self.get_battery_id(self.max_battery) + 1
 
         self.n_time = len(self.time)
-        self.n_states = self.n_diff * self.n_battery * self.n_time * self.n_pred_production
+        self.n_states = self.n_diff * self.n_battery * self.n_time
         
 
 
@@ -81,60 +81,12 @@ class MDP:
         intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'right'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  bins[10], closed = 'right'), pd.Interval(left = bins[10],right =  bins[11], closed = 'right'), pd.Interval(left = bins[11],right =  bins[12], closed = 'right'), pd.Interval(left = bins[12],right =  bins[13], closed = 'right'), pd.Interval(left = bins[13],right =  bins[14], closed = 'right')]
         # print("intervals: "  + str(intervals))
         return self.get_label_for_value(intervals, diff, d)
-    # # getters for data discretization
-
-   
-     # getters for production based on chosen discretization
-    def get_production(self,p):
-        if self.bins_prod == 3:
-            return self.get_production_three(p)
-        if self.bins_prod == 5:
-            return self.get_production_five(p)
-        if self.bins_prod == 7:
-            return self.get_production_seven(p)
-        if self.bins_prod == 10:
-            return self.get_production_ten(p)
-
-    # with 3 bins: (0, 0-1200, >1200)
-    def get_production_three(self,p):
-        return "none" if p == 0  else  ("low" if (p > 0) and (p < 1200) else ("high"))
-    # with 5 bins: (0, 0-330, 330-1200, 1200 - 3200, >3200), each bin with equal frequency
-    def get_production_five_copy(self,p):
-        prod = ["none", "low", "average", "high", "very high"]
-        intervals = [pd.Interval(left = 0, right = 0, closed = 'both'),pd.Interval(left = 0,right = 330, closed = 'right'), pd.Interval(left = 330,right =  1200, closed = 'right'), pd.Interval(left = 1200,right =  3200, closed = 'right'), pd.Interval(left = 3200,right =  7000, closed = 'right')]
-        return self.get_label_for_value(intervals, prod, p)
-
-    def get_production_five(self, p):
-        prod = ["none", "low", "average", "high", "very high"]
-        intervals = [pd.Interval(left = 0, right = 0, closed = 'both'),pd.Interval(left = 0,right = 330, closed = 'right'), pd.Interval(left = 330,right =  1200, closed = 'right'), pd.Interval(left = 1200,right =  3200, closed = 'right'), pd.Interval(left = 3200,right =  7000, closed = 'right')]
-        return self.get_label_for_value(intervals, prod, p)
-
-    # with 7 bins [0, 1.0, 171.0, 523.0, 1200.0, 2427.0, 4034.0]
-    def get_production_seven(self,p):
-        bins = [0, 1.0, 171.0, 523.0, 1200.0, 2427.0, 4034.0, 6070]
-        # bins = [0, 1.0, 1012.0, 2023.0, 3034.0, 4045.0, 5056.0, 6070]
-        prod = ["none", "very low","low", "average_low", "average_high", "high", "very high"]
-        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right')]
-        return self.get_label_for_value(intervals, prod, p)
-            
-    # with 10 bins [0, 1.0, 95.0, 275.0, 523.0, 953.0, 1548.0, 2430.0, 3491.0, 4569.0]
-    def get_production_ten(self,p):
-        bins = [0, 1.0, 95.0, 275.0, 523.0, 953.0, 1548.0, 2430.0, 3491.0, 4569.0]
-        prod = ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]
-        intervals = [pd.Interval(left = bins[0], right = bins[0], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'both'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  7000, closed = 'right')]
-        return self.get_label_for_value(intervals, prod, p)
-
+    
     def get_label_for_value(self, intervals, labels, value):
         for interval, label in zip(intervals, labels):
             if value in interval:
-                
                 return label
-            
-    # function to add noise for prediction of production (necessary ???)
-    def get_predict_prod(self,p):
-        mu, sigma = 1, 0.2
-        rand = np.random.normal(mu, sigma, 1)
-        return int(rand * p) 
+
     
     # function to return action_id with largest Q-value (!=0)
     # returns 2 (do nothing), if all q-values are the same
@@ -160,44 +112,25 @@ class MDP:
             rewards = [0 if x > 0 else x for x in rewards]
             
             return np.sum(rewards)
-
-                    
-                       
+        
     # function to find policy after training the RL agent
-    def find_policy(self, Q_table, dat):
+    def find_policy(self, Q_table, data):
         costs = []
         actions = []
         battery = []
-        states = []
-        discharged = 0
-        loss = 0
-        current_state = State(dat["Consumption"][0], dat["Production"][0], 2000, dat["Production"][1], dat["Time"][0], self)
         
-        for i in range(len(dat["Consumption"])):
+        current_state = State(data[0,0], data[0,1], 2000,data[0,2], self)
+        
+        l = data.shape[0]
+        for i in range(l):
             
-            # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
-            action = self.action_space[self.get_best_action(Q_table[State.get_id(current_state, self),:])]
-            # print(Q_table[State.get_id(current_state, self),:])
-            # print(action)
-            # print("State: " + str(State.get_id(current_state))
-            # print("Action ID: " + str(MDP.get_action_id(action)))
-            # print("Q table: " + str(Q_table[State.get_id(current_state),]))
-            
+            action = self.action_space[self.get_best_action(Q_table[int(State.get_id(current_state, self)),:])]
             costs.append(State.get_cost(current_state,action, self))
             actions.append(action)
             battery.append(current_state.battery)
+            current_state = State.get_next_state(current_state, action, data[i,0], data[i,1] ,data[i,2], self)
             
-            l = len(dat["Consumption"])
-            current_state = State.get_next_state(current_state, action, dat["Consumption"][(i+1)%l], dat["Production"][(i+1)%l], dat["Production"][(i+2)%l], dat["Time"][(i+1)%l], self)
-            
-            # check amount of discharged energy
-            if action == "discharge_high" and current_state.battery - self.discharge_high >= 0:
-                    discharged += self.discharge_high
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-            if action == "discharge_low" and current_state.battery - self.discharge_low >= 0:
-                    discharged += self.discharge_low
-                    loss += max(((current_state.p + self.discharge_high) - current_state.c), 0)
-        return costs, actions, battery, discharged, loss
+        return costs, actions, battery
 
     def iterate_q(Q_table, self):
         actions = []
@@ -214,15 +147,14 @@ class MDP:
 # Consumption, Production, Battery state, time, prediction of production in text timestep
 class State:
 
-    def __init__(self, c, p, battery, p_next, time, mdp):
+    def __init__(self, c, p, battery, time, mdp):
         self.d = p - c
         self.difference = mdp.get_difference(self.d)
         self.battery = battery
         self.time = time
         self.c = c
         self.p = p
-        self.pred = p_next
-        self.predicted_prod = mdp.get_production(self.pred)
+        
     
     def get_battery_value(action, mdp):
         return mdp.battery_steps[mdp.action_space.index(action)]
@@ -231,28 +163,20 @@ class State:
     # move to next state based on chosen action
     # only battery has to be updated
     # only battery has to be updated
-    def get_next_state(self, action, new_c, new_p,  new_pred, new_time, mdp):
+    def get_next_state(self, action, new_c, new_p, new_time, mdp):
         delta = State.get_battery_value(action, mdp)
         next_battery = self.battery
         if 0 <= self.battery + delta <= mdp.max_battery:
             next_battery = self.battery + delta
-        next_state = State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
+        next_state = State(new_c, new_p, int(next_battery), new_time, mdp)
 
         return next_state
     
 
-   
     def get_id(state, mdp):
-        # consumption
-        
         diff = {"-2000":0, "-1500":1, "-1000":2, "-500":3," 0":4, "500":5, "1000":6, "1500":7, "2000":8,"2500":9, "3000":10,"3500":11, "4000":12, "4500":13, "5000":14}
-        pred = {"none":0, "very low":1,"low":2, "moderately low":3, "average":4, "moderately high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}
-        
         d = diff.get(state.difference)
-        
-
-        pred = pred.get(state.predicted_prod)
-        return d * (mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
+        return d * (mdp.n_battery*24) + mdp.get_battery_id(state.battery)  * 24 + state.time
     
     def check_action(state,action, mdp):
         illegal = False
@@ -291,8 +215,7 @@ class State:
                 c += mdp.charge_low
         return min(p - c, 0)
       
-# realdata = RealData.get_real_data()  
-mdp = MDP(1000, 1000, 500, 500, 6000, 7)
+
 # print(mdp.get_difference(4516.0))
 # data_to_states(mdp_7, realdata)
 # # print(data_to_states(realdata))

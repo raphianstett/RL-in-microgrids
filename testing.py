@@ -10,6 +10,7 @@ from data import StepFunctions
 from data import RealData
 
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from collections import Counter
 from matplotlib.ticker import FormatStrFormatter
@@ -19,13 +20,12 @@ from matplotlib.ticker import FormatStrFormatter
 # import test data
 dat_test = StepFunctions.get_test_data()
 
-# import real data
-data = RealData.get_real_data()
+# # import real data
+# data = RealData.get_real_data()
 
-summer_data = RealData.get_summer(data)
+# summer_data = RealData.get_summer(data)
 
-training_data, test_data = RealData.split_data(summer_data, 7)
-print(training_data[1000:len(training_data)])
+training_data, test_data = RealData.get_training_test(7,True,False)
 
 # initialize MDP
 # MDP(max_charge, max_discharge, charge_low, discharge_low, max_battery, bins_cons, bins_prod)
@@ -34,16 +34,20 @@ mdp_3 = MDP(1000, 1000, 500, 500, 6000, 3,3)
 mdp_5 = MDP(1000, 1000, 500, 500, 6000, 5,5)
 mdp_7 = MDP(1000, 500, 500, 200, 4000, 7,7)
 mdp_10 = MDP(1000, 500, 500, 200, 4000, 10,10)
-mdp = mdp_7
-mdp_d = dMDP(1000, 500, 200, 500, 4000,  10)
+mdp = mdp_5
+mdp_d = dMDP(1000, 500, 200, 500, 4000)
 
-
-
+# Q_table_sol, rewards_per_episode= QLearning.iterate(training_data,1, 0.5,0.9,4,mdp)
+# cost, applied_actions, battery_states = MDP.find_policy(mdp_5,Q_table_sol, test_data)
+# print(np.sum(cost))
+# baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
+# print(np.sum(baseline_rewards))
 ### TEST BINNING IN RL CONVERGENCE ###
 def test_binning():
+    training_data, test_data = RealData.get_training_test(7, False, False)
     bins = [3,5,7,10]
     # bins = [3,5]
-    iterations = [100,500,750,1000,2000,5000, 10000]
+    iterations = [100,500,1000,2500,5000, 10000]
     # iterations = [3,5,6,10]
     labels = ['3 bins', '5 bins', '7 bins', '10 bins']
     # test_iterations = [1,2]
@@ -127,7 +131,7 @@ def test_steps():
 ##### TEST LEARNING RATE #####
 # can be copied to test gamma
 def test_lr():
-    lrs = np.arange(0.1,1.1,0.1)
+    lrs = [0.1,0.3,0.5,0.7,0.9]
     mdp = MDP(1000,500,500,200,6000,7,7)
     iterations = [100,750,500,1000,5000, 10000]
     # iterations = [5,10,15]
@@ -162,111 +166,160 @@ def test_lr():
 #test_lr()
 
 def test_gamma():
-    gammas = np.arange(0.1,1.1,0.1)
-    mdp = MDP(1000,500,500,200,6000,7,7)
-    iterations = [100,500,1000,5000]
-    # iterations = [5,10,15]
-    results = np.zeros((len(iterations), len(gammas)))
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    gammas = [0.1,0.3,0.5,0.7,0.9]
+    mdp = MDP(1000,500,500,200,6000,5,5)
+    iterations = [100,750,500,1000]
+    #iterations = [1,2,3,4,5,6]
+    results = np.zeros((len(gammas), len(iterations)))
     for j,x in enumerate(iterations):
         for i, g in enumerate(gammas):
             print("gamma")
-            Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x,0.5,g, mdp)
-            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q, test_data)
-            results[j,i] = np.sum(cost)
+            Q, rewards_per_episode = QLearning.iterate(training_data,x,0.5,g,4, mdp)
+            cost, applied_actions, battery_states = mdp.find_policy(Q, test_data)
+            results[i,j] = np.sum(cost)
     
     fig, ax = plt.subplots()
-    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
-    labels = ["Q-learning - 100 episodes", "Q-learning - 500 episodes","Q-learning - 1000 episodes","Q-learning - 5000 episodes"]
-    markers = ['^','s','x','o']
+    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey", "royalblue"]
+    labels = ["gamma = 0.1", "gamma = 0.3","gamma = 0.5","gamma = 0.7", "gamma = 0.9"]
+    markers = ['^','s','x','o','d']
 
-    for r in range(len(iterations)):
+    for r in range(len(gammas)):
         plt.plot(results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
     baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
-    plt.plot([np.sum(baseline_rewards)]*len(gammas), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
-    bs_without = mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])
-    plt.plot([bs_without]*len(gammas), label ="Baseline without ESS", color = "grey", linestyle = "dashed")
+    plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
+    bs_without = mdp.get_total_costs(test_data[:,0] - test_data[:,1])
+    plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashed")
     
-    plt.xticks(np.arange(0,10,1), gammas)
+    plt.xticks(np.arange(0,len(iterations),1), iterations)
     plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax.set_xlabel('Discount rate')
+    ax.set_xlabel('Number of training episodes')
     ax.set_ylabel('Costs')
     plt.title('Discount rate and RL performance')
     ax.legend()
     plt.savefig("Discount_rate.png")
     # plt.show()
-# test_gamma()
+test_gamma()
 
 
 ######## TEST SEASONAL DIFFERENCES IN DATA AND RL PERFORMANCE  #############
 def test_seasons():
     data = RealData.get_real_data()
-    summer_data = RealData.get_summer(RealData.get_real_data())
-    winter_data = RealData.get_winter(RealData.get_real_data())
+    # summer_data = RealData.get_summer(RealData.get_real_data())
+    # winter_data = RealData.get_winter(RealData.get_real_data())
 
-    training_summer, test_summer = RealData.split_data(summer_data, 7)
-    training_winter, test_winter = RealData.split_data(winter_data, 7)
-    training, test = RealData.split_data(data, 7)
+    training_summer, test_summer = RealData.get_training_test(7, True, False)
+    training_winter, test_winter = RealData.get_training_test(7, False, True)
+    training, test = RealData.get_training_test(7, False, False)
     
     # use optimal values for binning, step-sizes and learning rate
     mdp = MDP(1000,500,500,200,6000,7,7)
-    QS, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_summer,1000,0.5,0.9, mdp)
+    QS, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_summer,1000,0.5,0.9, 4,mdp)
+    print("start find policy")
     cost_s, applied_actions, battery_s, dis, loss, states = mdp.find_policy(QS, test_summer)
-    bs_s = mdp.get_total_costs(test_summer["Production"] - test_summer["Consumption"])
-    QW, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_winter,1000,0.5,0.9, mdp)
+    bs_s = mdp.get_total_costs(test_summer[:,1] - test_summer[:,0])
+    QW, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_winter,1000,0.5,0.9,4, mdp)
     cost_w, applied_actions, battery_s, dis, loss, states = mdp.find_policy(QW, test_winter)
-    bs_w = mdp.get_total_costs(test_winter["Production"] - test_winter["Consumption"])
-    Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training,1000,0.5,0.9, mdp)
+    bs_w = mdp.get_total_costs(test_winter[:,1] - test_winter[:,0])
+    Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training,1000,0.5,0.9,4, mdp)
     cost, applied_actions, battery_s, dis, loss, states = mdp.find_policy(Q, test)
-    bs = mdp.get_total_costs(test["Production"] - test["Consumption"])
+    bs = mdp.get_total_costs(test[:,1] - test[:,0])
     return np.sum(cost_s)/len(test_summer),bs_s / len(test_summer), np.sum(cost_w)/len(test_winter),bs_w/len(test_winter),np.sum(cost) / len(test),bs/len(test)
 # print(test_seasons())
 
 ############### TEST DIFFERENT STATE SPACES ########################
 from SA_variations.environment_with_diff import MDP as dMDP
 from SA_variations.environment_without_pred import MDP as rMDP
-from SA_variations.learning_without_pred import QLearning as rQ
-from SA_variations.learning_with_diff import QLearning as dQ
+from SA_variations.learning_without_pred import QLearning as rQLearning
+from SA_variations.learning_with_diff import QLearning as dQLearning
 
-def test_state_spaces():
-    summer_data = RealData.get_summer(RealData.get_real_data())
+def train_models(iterations):
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    # iterations = [100,500,1000,2500,5000]
+   
+    subfolder_name = 'Q_SA_models'
+    os.makedirs(subfolder_name, exist_ok=True)
+    for i,n in enumerate(iterations):
+        
+        # normal model with 5 bins
+        mdp = MDP(1000,500,500,200,6000,5,5)
+        Q5, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        
+        # normal model with 10 bins
+        mdp = MDP(1000,500,500,200,6000,3,3)
+        Q3, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        
+        # model with difference
+        dmdp = dMDP(1000,500,500,200,6000)
+        dQ, rewards_per_episode = dQLearning.iterate(training_data,n,0.5,0.9, dmdp)
+        
+        # model without prediciton
+        rmdp = rMDP(1000,500,500,200,6000,5,5)
+        rQ, rewards_per_episode = rQLearning.iterate(training_data,n,0.5,0.9, rmdp)
+        
+        # Define the file path within the subfolder
+        file_path = os.path.join(subfolder_name, 'Q5' + str(n)+ '.csv')
+        np.savetxt(file_path, Q5, delimiter=',', fmt='%d')
 
-    training_data, test_data = RealData.split_data(summer_data, 7)
-    iterations = [100,500,1000,2500,5000]
-    # iterations = [1,5,7,7,7]
+        file_path = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
+        np.savetxt(file_path, Q3, delimiter=',', fmt='%d')
+        
+        file_path = os.path.join(subfolder_name, 'dQ' + str(n)+ '.csv')
+        np.savetxt(file_path, dQ, delimiter=',', fmt='%d')
+        
+        file_path = os.path.join(subfolder_name, 'rQ' + str(n)+ '.csv')
+        np.savetxt(file_path, rQ, delimiter=',', fmt='%d')
+    
+
+def test_state_spaces(iterations):
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    # iterations = [100,500,1000,2500,5000, 10000]
+    # iterations = [1,2,3,4,5]
     results = np.zeros((6,len(iterations)))
+    subfolder_name = 'Q_SA_models'
     for i,n in enumerate(iterations):
         print("state spaces: " + str(n))
         # normal model with 5 bins
         mdp = MDP(1000,500,500,200,6000,5,5)
-        Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
-        costs_5, applied_actions, battery_s, dis, loss, states = mdp.find_policy(Q, test_data)
+        # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
+        file_path_5 = os.path.join(subfolder_name, 'Q5' + str(n)+ '.csv')
+        Q5 =  np.genfromtxt(file_path_5, delimiter=',')
+        costs_5, applied_actions, battery_s = mdp.find_policy(Q5, test_data)
         results[0,i] = np.sum(costs_5)
-        # normal model with 10 bins
-        mdp = MDP(1000,500,500,200,6000,10,10)
-        Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
-        costs_10, applied_actions, battery_s, dis, loss, states = mdp.find_policy(Q, test_data)
-        results[1,i] = np.sum(costs_10)
+
+        # normal model with 3 bins
+        mdp = MDP(1000,500,500,200,6000,3,3)
+        # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
+        file_path_3 = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
+        Q3 =  np.genfromtxt(file_path_3, delimiter=',')
+        costs_3, applied_actions, battery_s = mdp.find_policy(Q3, test_data)
+        results[1,i] = np.sum(costs_3)
 
         # model with difference
-        dmdp = dMDP(1000,500,500,200,6000,10)
-        dQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = dQ.iterate(training_data,n,0.5,0.9, dmdp)
-        dcosts, applied_actions, battery_s, dis, loss = dmdp.find_policy(dQ_table, test_data)
+        dmdp = dMDP(1000,500,500,200,6000)
+        # dQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = dQ.iterate(training_data,n,0.5,0.9, dmdp)
+        file_path_d = os.path.join(subfolder_name, 'dQ' + str(n)+ '.csv')
+        dQ =  np.genfromtxt(file_path_d, delimiter=',')
+        dcosts, applied_actions, battery_s = dmdp.find_policy(dQ, test_data)
         results[2,i] = np.sum(dcosts)
 
         # model without prediciton
-        rmdp = rMDP(1000,500,500,200,6000,10,10)
-        rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,n,0.5,0.9, rmdp)
-        rcosts, applied_actions, battery_s, dis, loss = rmdp.find_policy(rQ_table, test_data)
+        rmdp = rMDP(1000,500,500,200,6000,5,5)
+        # rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,n,0.5,0.9, rmdp)
+        file_path_r = os.path.join(subfolder_name, 'rQ' + str(n)+ '.csv')
+        rQ =  np.genfromtxt(file_path_r, delimiter=',')
+        rcosts, applied_actions, battery_s = rmdp.find_policy(rQ, test_data)
         results[3,i] = np.sum(rcosts)
+
         # Baseline
         baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
         results[4,i] = np.sum(baseline_rewards)
-        bs = mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])
+        bs = mdp.get_total_costs(test_data[:,1] - test_data[:,0])
         results[5,i] = bs
     fig, ax = plt.subplots()
     colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
     
-    labels = ["MDP with 5 bins", "MDP with 10 bins","MDP with difference","MDP without prediciton"]
+    labels = ["MDP with 5 bins", "MDP with 3 bins","MDP with difference","MDP without prediciton"]
     markers = ['^','s','x','o', ]
 
     for r in range(4):
@@ -285,145 +338,155 @@ def test_state_spaces():
     plt.savefig("state_spaces.png")
     #plt.show()
 
-    
+#train_models([500])
+#test_state_spaces([500])
+# plt.show()
 # test_state_spaces()
 ### Policy comparisons ####
-def test_policies():
-    
+def test_policies(iterations):
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    subfolder_name = 'Q_SA_models'
     # difference
     # without prediction, 5 production
     # 5 bins normal
     # rule based baseline
     # normal model with 5 bins
     mdp = MDP(1000,500,500,200,6000,5,5)
-    Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,5000,0.5,0.9, mdp)
-    costs_5, policy5, battery_s, dis, loss, states = mdp.find_policy(Q, test_data)
+    # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,5000,0.5,0.9, mdp)
     
+    file_path_5 = os.path.join(subfolder_name, 'Q5' + str(max(iterations))+ '.csv')
+    Q5 =  np.genfromtxt(file_path_5, delimiter=',')
+    costs_5, policy_5, battery_s = mdp.find_policy(Q5, test_data)
 
+    # normal model with 3 bins
+    mdp = MDP(1000,500,500,200,6000,3,3)
+    # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
+    file_path_3 = os.path.join(subfolder_name, 'Q3' + str(max(iterations))+ '.csv')
+    Q3=  np.genfromtxt(file_path_3, delimiter=',')
+    costs_3, policy_3, battery_s = mdp.find_policy(Q3, test_data)
+    
     # model with difference
-    dmdp = dMDP(1000,500,500,200,6000,5)
-    dQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = dQ.iterate(training_data,5000,0.5,0.9, dmdp)
-    dcosts, policyd, battery_s, dis, loss = dmdp.find_policy(dQ_table, test_data)
-
-    # model without prediciton
+    dmdp = dMDP(1000,500,500,200,6000)
+    # dQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = dQ.iterate(training_data,n,0.5,0.9, dmdp)
+    file_path_d = os.path.join(subfolder_name, 'dQ' + str(max(iterations))+ '.csv')
+    dQ =  np.genfromtxt(file_path_d, delimiter=',')
+    dcosts, policy_d, battery_s = dmdp.find_policy(dQ, test_data)
+    
+    # model without prediciton and 3 bins
     rmdp = rMDP(1000,500,500,200,6000,5,5)
-    rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,5000,0.5,0.9, rmdp)
-    rcosts, policyr, battery_s, dis, loss = rmdp.find_policy(rQ_table, test_data)
+    # rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,n,0.5,0.9, rmdp)
+    file_path_r = os.path.join(subfolder_name, 'rQ' + str(max(iterations))+ '.csv')
+    rQ =  np.genfromtxt(file_path_r, delimiter=',')
+    rcosts, policy_r, battery_s = rmdp.find_policy(rQ, test_data)
+    
     # Baseline
     baseline_rewards, baseline_states, policy_baseline, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
     fig, ax = plt.subplots()
     #plt.style.use('seaborn-deep')
     
-    plt.hist([policy5, policyd, policyr, policy_baseline], label= ['5 bins', 'with difference', 'without prediction', 'rule-based baseline'], color = ["lightcoral", "lightslategrey", "yellowgreen", "purple"], rwidth=0.8)
+    plt.hist([policy_5, policy_3, policy_d, policy_r, policy_baseline], label= ['5 bins','3 bins', 'with difference', 'without prediction', 'rule-based baseline'], color = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey","purple"], rwidth=0.8)
     ax.legend(loc = 'upper right')
-    print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
-#test_policies()
-def test_batteries():
-    
+
+    # print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
+# test_policies([500])
+# plt.show()
+
+def test_batteries(iterations, start, end):
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    subfolder_name = 'Q_SA_models'
     # difference
     # without prediction, 5 production
     # 5 bins normal
     # rule based baseline
+
     # normal model with 5 bins
     mdp = MDP(1000,500,500,200,6000,5,5)
-    Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,5000,0.5,0.9, mdp)
-    costs_5, policy5, battery5, dis, loss, states = mdp.find_policy(Q, test_data)
+    file_path_5 = os.path.join(subfolder_name, 'Q5' + str(max(iterations))+ '.csv')
+    Q5 =  np.genfromtxt(file_path_5, delimiter=',')
+    costs_5, policy_5, battery_5 = mdp.find_policy(Q5, test_data)
+
+    # normal model with 3 bins
+    mdp = MDP(1000,500,500,200,6000,3,3)
+    file_path_3 = os.path.join(subfolder_name, 'Q3' + str(max(iterations))+ '.csv')
+    Q3 =  np.genfromtxt(file_path_3, delimiter=',')
+    costs_3, policy_3, battery_3 = mdp.find_policy(Q3, test_data)
     
-
     # model with difference
-    dmdp = dMDP(1000,500,500,200,6000,5)
-    dQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = dQ.iterate(training_data,5000,0.5,0.9, dmdp)
-    dcosts, policyd, batteryd, dis, loss = dmdp.find_policy(dQ_table, test_data)
+    dmdp = dMDP(1000,500,500,200,6000)
+    file_path_d = os.path.join(subfolder_name, 'dQ' + str(max(iterations))+ '.csv')
+    dQ =  np.genfromtxt(file_path_d, delimiter=',')
+    dcosts, policy_d, battery_d = dmdp.find_policy(dQ, test_data)
 
-    # model without prediciton
+     # model without prediciton and 3 bins
     rmdp = rMDP(1000,500,500,200,6000,5,5)
-    rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,5000,0.5,0.9, rmdp)
-    rcosts, policyr, batteryr, dis, loss = rmdp.find_policy(rQ_table, test_data)
+    # rQ_table, rewards_per_episode, all_rewards, actions, states_id, states, battery = rQ.iterate(training_data,n,0.5,0.9, rmdp)
+    file_path_r = os.path.join(subfolder_name, 'rQ' + str(max(iterations))+ '.csv')
+    rQ =  np.genfromtxt(file_path_r, delimiter=',')
+    rcosts, policy_r, battery_r = rmdp.find_policy(rQ, test_data)
+    
     # Baseline
     baseline_rewards, baseline_states, policy_baseline, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
-    labels = ['5 bins MDP', 'MDP with difference', 'MDP without prediction']
-    batteries = [battery5, batteryd, batteryr]
-    colors = ["darkred", "darkblue", "darkgreen"]
-    for b in range(3):
-        plt.figure()
-
-        plt.plot(batteries[b][:186], color = colors[b], label = labels[b])
-        plt.plot(baseline_bat[:186], color = "grey", linestyle = "dashdot", label = "rule-based Baseline")
-        plt.xlabel('Days')
-        plt.ylabel('State of battery')
-        plt.title('Comparison of battery states')
-        plt.xticks(np.arange(12,200,24), np.arange(0,8,1))
-        plt.legend(loc = "upper right")
-        plt.savefig("battery" + str(b) + ".png")
-
-    print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
-
-#test_batteries()
-plt.show()
-################## APPLIED Q-TABLE #################################
-# print(Q_table_sol)
-rewards_it = [None]*40
-# for i in range(40):
-#     reward, applied_actions, battery_states = MDP.find_policy(Q_table_sol, training_data)
+    labels = ['5 bins MDP', '3 bins MDP', 'MDP with difference', 'MDP without prediction']
+    batteries = [battery_5, battery_3, battery_d, battery_r]
+    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
+    fig = plt.figure()
     
-#     #print(reward)
-#     print(np.sum(reward))
-#     rewards_it[i] = np.sum(reward)
+    for i,b in enumerate(batteries):
+        
+        ax = fig.add_subplot(2,2,i+1)
+        ax.plot(b[start:end], color = colors[i])
+        ax.set_title(labels[i])
+        ax.plot(baseline_bat[start:end], color = "lightgrey", linestyle = "dashdot")
+        ax.set_xlabel('Days')
+        ax.set_ylabel('State of battery')
+        ax.set_xticks(np.arange(12,200,24), np.arange(0,8,1))
+        
+    plt.suptitle('Battery states for different Models')    
+    plt.savefig("batteries.png")
+    plt.tight_layout()
+    print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
+# first week of june
+# test_batteries([500], 0,186)
+# # first week of december
+# test_batteries([500], 1008, 1194)
+plt.show()
 
+############## TEST EPSILONS ##########################
+def test_epsilons():
+    epsilons = [1,3,5,7,9]
+    mdp = MDP(1000,500,500,200,6000,7,7)
+    iterations = [100,500,750,1000,2000,5000]
+    # iterations = [5,10,15]
+    results = np.zeros((len(epsilons), len(iterations)))
+    for j,x in enumerate(iterations):
+        for i, e in enumerate(epsilons):
+            
+            Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x,0.5,0.9,e, mdp)
+            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q, test_data)
+            results[i,j] = np.sum(cost)
+    
+    fig, ax = plt.subplots()
+    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey", "royalblue"]
+    labels = ["decreasing decay = 1", "decreasing decay = 3","decreasing decay = 5","decreasing decay = 7","decreasing decay = 9"]
+    markers = ['^','s','x','o', 'd']
 
-# print(rewards_it)
-# plt.plot(rewards_it)
+    for r in range(len(epsilons)):
+        plt.plot(results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
+    baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
+    plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
+    bs_without = mdp.get_total_costs(test_data[:,1] - test_data[:,0])
+    plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashed")
+    
+    plt.xticks(np.arange(0,len(iterations),1), iterations)
+    #plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax.set_xlabel('Number of training episodes')
+    ax.set_ylabel('Costs')
+    plt.title('Effect of exploration-exploitation trade-off')
+    ax.legend(loc = 'upper left')
+    plt.savefig("epsilon.png")
+    # plt.show()
+# test_epsilons()
 # plt.show()
-# plt.hist(MDP.iterate_q(Q_table_sol))
-# plt.show()
-# print(MDP.iterate_q(Q_table_sol))
-# print(reward)
-
-# print(applied_actions)
-
-# plt.plot(battery_states[1:220])
-# plt.show()
-
-# plt.show()
-#print(reward)
-
-# print(applied_actions)
-# print("amount discharged:" + str(dis))
-
-# print(Q_table_sol)
-# print(len(Q_table_sol))
-# print(len(applied_actions))
-# # plt.plot(applied_actions)
-# plt.show()
-# print(Q_table_sol)
-# plt.plot(battery_states[:240])
-# plt.show()
-
-# print(battery_states)
-## APPLIED ACTIONS
-def analyse_actions(applied_actions):
-    l = int(np.ceil(len(applied_actions)/24))
-    av_day = [0]*24
-    for i in range(l-1):
-        for j in range(24):
-            av_day[j] += applied_actions[i*24+j]
-    day = [x/l for x in av_day]
-    return day
-
-# print(analyse_actions(applied_actions))
-# plt.plot(analyse_actions(applied_actions))
-# plt.show()
-#print(np.ceil(len(applied_actions)/24))
-# ################## REWARDS #################################
-#plt.plot(rewards_per_episode)
-# rewards = [x/len(data["Purchased"]) for x in rewards_per_episode]
-# plt.plot(rewards)
-# plt.show()
-# print(all_rewards)
-# # print(rewards)
-
-# print(len(dat))
-
 ############### ACTIONS #################################
 # print(actions)
 # daytime: 9 am - 6 pm
@@ -483,20 +546,7 @@ def compare_actions_hist(mdp):
 
     plt.show()
 
-################ Q-TABLE #################################
-# print(Q_table_sol)
 
-
-############## BATTERY #################################
-
-# plt.plot(battery[:240])
-# plt.show()
-
-################## STATES #################################  
-# print(states[:1000])
-# print(len(states))
-
-#plt.show()
 
 ################ BASELINE TESTING ##########################
 baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)

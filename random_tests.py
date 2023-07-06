@@ -2,19 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-def test_exploration(i):
+def test_exploration(i, e, color):
     exp = [0]*i
     min_exploration_proba = 0.01
     #exploration_decreasing_decay = 0.01
-    exploration_decreasing_decay = 4 / i
+    exploration_decreasing_decay = e / i
     exploration_proba = 1
     for i in range(i):  
           
         exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*i))
         exp[i] = exploration_proba
+    plt.plot(exp, color = color)
     return exp
-# plt.plot(test_exploration(500))
-#plt.show()
+    # plt.plot(test_exploration(500))
+
+test_exploration(5000, 1, "red")
+test_exploration(5000, 4, "blue")
+test_exploration(5000, 8, "yellow")
+test_exploration(5000, 10, "green")
+plt.show()
 import matplotlib.pyplot as plt
 
 # x_values = [1, 5, 20, 50]
@@ -56,13 +62,13 @@ y_plot = logarithmic_function(x_plot, *params)
 # print(y_plot)
 # print(x_plot)
 # Plot the original data and the fitted curve
-plt.scatter(x_data, y_data, label='Data')
-plt.plot(x_plot, y_plot, label='Fitted Curve')
+# plt.scatter(x_data, y_data, label='Data')
+# plt.plot(x_plot, y_plot, label='Fitted Curve')
 
-plt.xlabel('X-axis')
-plt.ylabel('Y-axis')
-plt.title('Approximation with Logarithmic Function')
-plt.legend()
+# plt.xlabel('X-axis')
+# plt.ylabel('Y-axis')
+# plt.title('Approximation with Logarithmic Function')
+# plt.legend()
 
 #plt.show()
 # print(np.arange(1,11,1))
