@@ -33,7 +33,6 @@ class MDP:
         # action space  
         self.action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge_high"]
         self.action_space_c = ["discharge_high", "discharge_low", "do nothing"]
-        # self.action_space = ["discharge_high", "discharge_low", "do nothing","charge_low", "charge_high"]
         
         self.n_actions = len(self.action_space)
         self.n_actions_c = self.n_actions - 2
@@ -44,10 +43,7 @@ class MDP:
         self.charge_low = charge_low # 500
         
         self.max_battery = max_battery
-        # self.step_high_charge = int(max_charge / 100)
-        # self.step_high_discharge = int(max_discharge/100)
-        # self._low_charge = int(charge_low / 100)
-        # self.step_low_discharge = int(discharge_low / 100)
+       
         self.battery_steps = [- self.discharge_high, - self.discharge_low, 0, self.charge_low, self.charge_high]
         # dimensions
         self.n_consumption = len(self.consumption)
@@ -151,7 +147,7 @@ class MDP:
     def get_production_ten(self,p):
         bins = [0, 1.0, 95.0, 275.0, 523.0, 953.0, 1548.0, 2430.0, 3491.0, 4569.0]
         prod = ["none", "very low","low", "moderately low", "average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]
-        intervals = [pd.Interval(left = bins[0], right = bins[0], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  7000, closed = 'right')]
+        intervals = [pd.Interval(left = bins[0], right = bins[0], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'both'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  7000, closed = 'right')]
         return self.get_label_for_value(intervals, prod, p)
 
     def get_label_for_value(self, intervals, labels, value):
@@ -190,7 +186,7 @@ class MDP:
 
 class Policy:                
     # function to find policy after training the RL agent
-    def find_policies(self, Q_A, Q_B, Q_C, dat):
+    def find_policies(mdp, Q_A, Q_B, Q_C, data):
         costs_A = []
         costs_B = []
         costs_C = []
@@ -203,21 +199,18 @@ class Policy:
         discharged = 0
         loss = 0
         
-        state_A = State(dat["Consumption_A"][0], dat["Production_A"][0], 6000, dat["Production_A"][1], dat["Time"][0], self)
-        state_B = State(dat["Consumption_B"][0], dat["Production_B"][0], 6000, dat["Production_B"][1], dat["Time"][0], self)
-        state_C = State(dat["Consumption_C"][0], dat["Production_C"][0], 6000, dat["Production_C"][1], dat["Time"][0], self)
-                                      
-        for i in range(len(dat["Consumption_A"])):
+        state_A = State(data[0,0], data[0,3], 2000, data[1,3] ,data[0,7], mdp)
+        state_B = State(data[0,1], data[0,4], 2000, data[1,4] ,data[0,7], mdp)
+        state_C = State(data[0,2], data[0,5], 2000, data[1,5] ,data[0,7], mdp)
+        l = data.shape[0]
+
+        for i in range(l):
             
-            # print("iteration: " + str(i) + "time: " + str(dat["Time"][i]))
-            action_A = self.action_space[self.get_best_action(Q_A[State2.get_id(state_A, self),:])]
-            action_B = self.action_space[self.get_best_action(Q_B[State2.get_id(state_B, self),:])]
-            action_C = self.action_space[self.get_best_action(Q_C[State2.get_id(state_C, self),:])]
+            action_A = mdp.action_space[mdp.get_best_action(Q_A[int(State2.get_id(state_A, mdp)),:])]
+            action_B = mdp.action_space[mdp.get_best_action(Q_B[int(State2.get_id(state_B, mdp)),:])]
+            action_C = mdp.action_space[mdp.get_best_action(Q_C[int(State2.get_id(state_C, mdp)),:])]
             
-            # print("State: " + str(State.get_id(current_state))
-            # print("Action ID: " + str(MDP.get_action_id(action)))
-            # print("Q table: " + str(Q_table[State.get_id(current_state),]))
-            cost_A, cost_B, cost_C = Reward.get_cost(state_A, state_B, state_C, action_A, action_B, action_C, self)
+            cost_A, cost_B, cost_C = Reward.get_cost(state_A, state_B, state_C, action_A, action_B, action_C, mdp)
             costs_A.append(- cost_A)
             costs_B.append(- cost_B)
             costs_C.append(- cost_C)
@@ -228,11 +221,11 @@ class Policy:
             policy_C.append(action_C)
             battery_A.append(state_A.battery)
             battery_B.append(state_B.battery)
-            l = len(dat["Consumption_A"])
-            state_A = State.get_next_state(state_A, dat["Consumption_A"][i%l], dat["Production_A"][i%l], dat["Production_A"][(i+1)%l], dat["Time"][i%l], self, action_A, action_B, action_C)
-            state_B = State.get_next_state(state_B, dat["Consumption_B"][i%l], dat["Production_B"][i%l], dat["Production_B"][(i+1)%l], dat["Time"][i%l], self, action_A, action_B, action_C)
-            state_C = State.get_next_state(state_C, dat["Consumption_C"][i%l], dat["Production_C"][i%l], dat["Production_C"][(i+1)%l], dat["Time"][i%l], self, action_A, action_B, action_C)
-           
+            
+            state_A = State.get_next_state(state_A,data[i,0], data[i,3], data[(i+1)%l,3] ,data[i,7], action_A, action_B, action_C, mdp)
+            state_B = State.get_next_state(state_B,data[i,1], data[i,4], data[(i+1)%l,4] ,data[i,7], action_A, action_B, action_C, mdp)
+            state_C = State.get_next_state(state_C,data[i,2], data[i,5], data[(i+1)%l,5] ,data[i,7], action_A, action_B, action_C, mdp)
+
 
         return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A, battery_B
 
@@ -259,8 +252,8 @@ class State:
         
     def get_next_state(self, new_c, new_p, new_pred, new_time, mdp, action_A, action_B, action_C):
         next_battery = self.get_next_battery(action_A, action_B, action_C, mdp)
-        print("current: " + str(self.battery))
-        print("next: "+ str(next_battery))
+        #print("current: " + str(self.battery))
+        #print("next: "+ str(next_battery))
         return State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
 
     
@@ -292,8 +285,8 @@ class State:
             raise ValueError
         deltas = [deltaA, deltaB, deltaC]
         sum_deltas = np.sum(deltas)
-        print("in check deltas:" + str(deltas))
-        print("battery: " + str(state.battery))
+        #print("in check deltas:" + str(deltas))
+        # print("battery: " + str(state.battery))
         # print(sum_deltas)
         if minimum <= state.battery + sum_deltas <= maximum:
             
@@ -377,7 +370,6 @@ class Reward:
     
     def get_cost(state_A, state_B, state_C, action_A, action_B, action_C, mdp):
         deltaA, deltaB, deltaC = State.check_actions(state_A, action_A, action_B, action_C, mdp)
-        
         return Reward.calc_cost(state_A, deltaA), Reward.calc_cost(state_B, deltaB), Reward.calc_cost(state_C, deltaC)
     
     def calc_cost(state, delta):

@@ -99,9 +99,9 @@ def train_B(iterations):
         # np.savetxt(file_path, rQ, delimiter=',', fmt='%d')
 
 ########## TRAIN 2MARL MODEL ##############
-from MA2_learning_diff import MA_QLearning as dMA_QLearning
-from MA2_environment_diff import MDP as dMDP2
-from MA2_environment_diff import Policy as dPolicy
+from MA2_variations.MA2_learning_diff import MA_QLearning as dMA_QLearning
+from MA2_variations.MA2_environment_diff import MDP as dMDP2
+from MA2_variations.MA2_environment_diff import Policy as dPolicy
 
 # train MA on different models
 def train_MA2(iterations):

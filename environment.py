@@ -22,7 +22,7 @@ class MDP:
         consumption_discr = [["low", "average", "high"],
                             ["very low", "low", "average", "high", "very high"],
                             ["very low", "low", "moderately low", "average", "moderately high", "high", "very high"],
-                            ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]]
+                            ["extremely low", "very low", "low", "moderately low","average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]]
         
         idx_c = int(np.floor(bins_cons/2) - 1) if self.bins_cons != 10 else 3
         self.consumption = consumption_discr[idx_c]
@@ -114,7 +114,7 @@ class MDP:
     # bins: [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
     def get_consumption_ten(self,c):
         bins = [0.0, 165.0, 217.0, 234.0, 266.0, 304.0, 339.0, 375.0, 424.0, 570.0]
-        cons = ["extremely low", "very low", "low", "moderately low","average", "moderalety high", "high", "very high", "extremely high", "exceptionally high"]
+        cons = ["extremely low", "very low", "low", "moderately low","average", "moderately high", "high", "very high", "extremely high", "exceptionally high"]
         intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'both'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  3000, closed = 'right')]
         return self.get_label_for_value(intervals, cons, c)
 
@@ -308,10 +308,14 @@ class State:
 
     def get_id_ten(state, mdp):
         # consumption
-        c = {"extremely low":0, "very low":1, "low":2, "moderately low":3,"average":4, "moderalety high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}[state.consumption]
+        
+        c = {"extremely low":0, "very low":1, "low":2, "moderately low":3,"average":4, "moderately high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}[state.consumption]
         prod = {"none":0, "very low":1,"low":2, "moderately low":3, "average":4, "moderately high":5, "high":6, "very high":7, "extremely high":8, "exceptionally high":9}
+        
         p = prod.get(state.production)
+       
         pred = prod.get(state.predicted_prod)
+        
         return c * (mdp.n_production*mdp.n_battery*mdp.n_pred_production*24) + p *(mdp.n_battery*mdp.n_pred_production*24) + mdp.get_battery_id(state.battery) * (mdp.n_pred_production*24) + pred * 24 + state.time
     
     def check_action(state,action, mdp):
@@ -415,7 +419,8 @@ def count_occurences(data):
 
 # # print(State.get_id(s))
 mdp = MDP(1000, 500, 500, 200, 4000, 7,7)
-# # # s = State(305.0, 119.0, 1000, 3300, 23, mdp)
+s = State(305.0, 119.0, 1000, 3300, 23, mdp)
+
 # # # print(s.get_id(mdp))
 # q = [-1, -2,0,-1,-2]
 # print(MDP.get_best_next(mdp, q))

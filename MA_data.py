@@ -189,7 +189,7 @@ class Data_2:
         plt.show()
 
 class Data_3:
-    def write_data(self):
+    def write_data():
         data2 = Data_2()
         df = RealData.get_real_data()
         
@@ -207,20 +207,33 @@ class Data_3:
         # print(df[:100])
         # return df
     
-    def get_data(self):
+    def get_data():
         dat = pd.read_csv("MA_3_data.csv")
         # print(dat[:100])
         dat = {'Consumption_A': dat["Consumption_A"],'Consumption_B': dat["Consumption_B"], 'Consumption_C': dat["Consumption_C"], 'Production_A': dat["Production_A"],'Production_B': dat["Production_B"], 'Production_C': dat["Production_C"], 'is weekend': dat["is_weekend"], 'Date': dat["Date"],'Time': dat["Time"]}
         dat['Date'] = pd.to_datetime(dat['Date'])
         dat = pd.DataFrame(dat, columns=['Consumption_A','Consumption_B', 'Consumption_C', 'Production_A','Production_B','Production_C', 'is weekend', 'Date','Time'])        
         return dat
-    def plot_differences(df_training):
-        d_A = df_training["Production_A"] - df_training["Consumption_A"]
-        d_B = df_training["Production_B"] - df_training["Consumption_B"]
-        d_C = df_training["Consumption_C"] 
+    
+    
+    def plot_differences():
+        dat = Data_3.get_data()
+        d_s = RealData.get_summer_pd(dat)
+        d_w = RealData.get_winter_pd(dat)
 
-        plt.plot(d_A[:186], color = "red")
-        plt.plot(d_B[:186], color = "blue")
-        plt.plot(d_C[:186], color ="green")
+        d_A = d_s["Production_A"] - d_s["Consumption_A"]
+        d_B = d_s["Production_B"] - d_s["Consumption_B"]
+        d_C = d_s["Consumption_C"] 
 
+        plt.plot(d_A[:168], color = "tab:red", label = "A", linestyle = "solid")
+        plt.plot(d_B[:168], color = "royalblue", label = "B", linestyle = "dashdot")
+        plt.plot(d_C[:168], color ="darkslategrey", label = "C", linestyle = "dashdot")
+        plt.xlabel('Days')
+        plt.ylabel('Value in Wh')
+        plt.xticks(np.arange(12,180,24), np.arange(1,8,1))
+        plt.legend()
+        plt.title('Differences between production and demand')
+        plt.savefig("MA3_data.png", dpi = 300)
         plt.show()
+
+    

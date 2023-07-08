@@ -42,25 +42,28 @@ mdp_d = dMDP(1000, 500, 200, 500, 4000)
 # print(np.sum(cost))
 # baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
 # print(np.sum(baseline_rewards))
+
+
+
 ### TEST BINNING IN RL CONVERGENCE ###
-def test_binning():
+def test_binning(iterations):
     training_data, test_data = RealData.get_training_test(7, False, False)
     bins = [3,5,7,10]
     # bins = [3,5]
-    iterations = [100,500,1000,2500,5000, 10000]
+    # iterations = [100,500,1000,2500,5000,10000]
     # iterations = [3,5,6,10]
     labels = ['3 bins', '5 bins', '7 bins', '10 bins']
     # test_iterations = [1,2]
     results = np.zeros((len(bins), len(iterations)))
-    
+    subfolder_name = 'Q_SA_models'
     for i,b in enumerate(bins):
-        
-        for j,x in enumerate(iterations):
+        for j,n in enumerate(iterations):
             print("bin testing")
             mdp = MDP(1000, 500, 500, 200, 6000, b, b)
-            Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x, 0.5,0.9,mdp)
-            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q_table_sol, test_data)
-            results[i,j] = np.sum(cost)
+            file_path = os.path.join(subfolder_name, 'Q' +str(b) +  str(n)+ '.csv')
+            Q =  np.genfromtxt(file_path, delimiter=',')
+            costs, policy, battery = mdp.find_policy(Q, test_data)
+            results[i,j] = np.sum(costs)
     
     colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
     markers = ['^','s','x','o']
@@ -73,14 +76,14 @@ def test_binning():
     mdp_baseline = MDP(1000,500,500,200,6000,7,7)
     baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp_baseline)
     plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
-    bs_without = mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])
+    bs_without = mdp.get_total_costs(test_data[:,1] - test_data[:,0])
     plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashdot")
     ax.set_xlabel('Number of training episodes')
     ax.set_ylabel('Costs')
     plt.xticks(x, iterations, rotation=45)
     plt.title('Effect of binning on RL performance')
     ax.legend()
-    plt.savefig("binning.png")
+    plt.savefig("binning_new.png", dpi = 300)
     # plt.show()
     
 
@@ -125,52 +128,53 @@ def test_steps():
     plt.xticks(x, iterations, rotation=45)
     plt.title('Effect of ESS Model step sizes on RL performance')
     ax.legend()
-    plt.savefig("test_steps.png")
+    plt.savefig("test_steps.png", dpi = 300)
 #test_steps()
     
 ##### TEST LEARNING RATE #####
 # can be copied to test gamma
 def test_lr():
+    training_data, test_data = RealData.get_training_test(7, False, False)
     lrs = [0.1,0.3,0.5,0.7,0.9]
-    mdp = MDP(1000,500,500,200,6000,7,7)
-    iterations = [100,750,500,1000,5000, 10000]
-    # iterations = [5,10,15]
-    results = np.zeros((len(iterations), len(lrs)))
+    mdp = MDP(1000,500,500,200,6000,5,5)
+    iterations = [100,500,1000,2500,5000]
+    # iterations = [1,2,3,4,8]
+    results = np.zeros((len(lrs), len(iterations)))
     for j,x in enumerate(iterations):
-        for i, lr in enumerate(lrs):
+        for i,l in enumerate(lrs):
             print("learning rate")
-            Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x,lr,0.9, mdp)
-            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q, test_data)
-            results[j,i] = np.sum(cost)
+            Q, rewards_per_episode = QLearning.iterate(training_data,x,l,0.9,4, mdp)
+            cost, applied_actions, battery_states = mdp.find_policy(Q, test_data)
+            results[i,j] = np.sum(cost)
     
     fig, ax = plt.subplots()
-    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
-    labels = ["Q-learning - 100 episodes", "Q-learning - 500 episodes","Q-learning - 1000 episodes","Q-learning - 5000 episodes"]
-    markers = ['^','s','x','o']
+    colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey", "royalblue"]
+    labels = ["lr = 0.1", "lr = 0.3","lr = 0.5","lr = 0.7", "lr = 0.9"]
+    markers = ['^','s','x','o','d']
 
-    for r in range(len(iterations)):
+    for r in range(len(lrs)):
         plt.plot(results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
     baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
-    plt.plot([np.sum(baseline_rewards)]*len(lrs), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
-    bs_without = mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])
-    plt.plot([bs_without]*len(lrs), label ="Baseline without ESS", color = "grey", linestyle = "dashdot")
+    plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
+    bs_without = mdp.get_total_costs(test_data[:,0] - test_data[:,1])
+    plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashed")
     
-    plt.xticks(np.arange(0,10,1), lrs)
-    plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax.set_xlabel('Learning Rate')
+    plt.xticks(np.arange(0,len(iterations),1), iterations)
+    #plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax.set_xlabel('Number of training episodes')
     ax.set_ylabel('Costs')
-    plt.title('Effect of Learning rate on RL performance')
+    plt.title('Learning rate and RL performance')
     ax.legend()
-    plt.savefig("learning_rate.png")
+    plt.savefig("learning_rate.png", dpi = 300)
     # plt.show()
-#test_lr()
+# test_lr()
 
 def test_gamma():
     training_data, test_data = RealData.get_training_test(7, False, False)
     gammas = [0.1,0.3,0.5,0.7,0.9]
     mdp = MDP(1000,500,500,200,6000,5,5)
-    iterations = [100,750,500,1000]
-    #iterations = [1,2,3,4,5,6]
+    iterations = [100,500,750,1000]
+    # iterations = [1,2,3,4,5,6]
     results = np.zeros((len(gammas), len(iterations)))
     for j,x in enumerate(iterations):
         for i, g in enumerate(gammas):
@@ -197,9 +201,9 @@ def test_gamma():
     ax.set_ylabel('Costs')
     plt.title('Discount rate and RL performance')
     ax.legend()
-    plt.savefig("Discount_rate.png")
+    plt.savefig("Discount_rate.png", dpi = 300)
     # plt.show()
-test_gamma()
+# test_gamma()
 
 
 ######## TEST SEASONAL DIFFERENCES IN DATA AND RL PERFORMANCE  #############
@@ -235,19 +239,27 @@ from SA_variations.learning_with_diff import QLearning as dQLearning
 
 def train_models(iterations):
     training_data, test_data = RealData.get_training_test(7, False, False)
-    # iterations = [100,500,1000,2500,5000]
+    # iterations = [100,500,1000,2500,5000,10000]
    
     subfolder_name = 'Q_SA_models'
     os.makedirs(subfolder_name, exist_ok=True)
     for i,n in enumerate(iterations):
         
+        # normal model with 3 bins
+        mdp = MDP(1000,500,500,200,6000,3,3)
+        Q3, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        
         # normal model with 5 bins
         mdp = MDP(1000,500,500,200,6000,5,5)
         Q5, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
+        # normal model with 7 bins
+        mdp = MDP(1000,500,500,200,6000,7,7)
+        Q7, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        
         # normal model with 10 bins
-        mdp = MDP(1000,500,500,200,6000,3,3)
-        Q3, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        mdp = MDP(1000,500,500,200,6000,10,10)
+        Q10, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
         # model with difference
         dmdp = dMDP(1000,500,500,200,6000)
@@ -258,11 +270,17 @@ def train_models(iterations):
         rQ, rewards_per_episode = rQLearning.iterate(training_data,n,0.5,0.9, rmdp)
         
         # Define the file path within the subfolder
+        file_path = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
+        np.savetxt(file_path, Q3, delimiter=',', fmt='%d')
+
         file_path = os.path.join(subfolder_name, 'Q5' + str(n)+ '.csv')
         np.savetxt(file_path, Q5, delimiter=',', fmt='%d')
 
-        file_path = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
-        np.savetxt(file_path, Q3, delimiter=',', fmt='%d')
+        file_path = os.path.join(subfolder_name, 'Q7' + str(n)+ '.csv')
+        np.savetxt(file_path, Q7, delimiter=',', fmt='%d')
+
+        file_path = os.path.join(subfolder_name, 'Q10' + str(n)+ '.csv')
+        np.savetxt(file_path, Q10, delimiter=',', fmt='%d')
         
         file_path = os.path.join(subfolder_name, 'dQ' + str(n)+ '.csv')
         np.savetxt(file_path, dQ, delimiter=',', fmt='%d')
@@ -292,7 +310,7 @@ def test_state_spaces(iterations):
         # Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,n,0.5,0.9, mdp)
         file_path_3 = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
         Q3 =  np.genfromtxt(file_path_3, delimiter=',')
-        costs_3, applied_actions, battery_s = mdp.find_policy(Q3, test_data)
+        costs_3, policy, battery = mdp.find_policy(Q3, test_data)
         results[1,i] = np.sum(costs_3)
 
         # model with difference
@@ -335,7 +353,7 @@ def test_state_spaces(iterations):
     ax.set_ylabel('Costs')
     plt.title('Effect of MDP on RL performance')
     ax.legend()
-    plt.savefig("state_spaces.png")
+    plt.savefig("state_spaces.png", dpi = 300)
     #plt.show()
 
 #train_models([500])
@@ -442,31 +460,38 @@ def test_batteries(iterations, start, end):
         ax.set_xticks(np.arange(12,200,24), np.arange(0,8,1))
         
     plt.suptitle('Battery states for different Models')    
-    plt.savefig("batteries.png")
+    plt.savefig("batteries.png", dpi = 300)
     plt.tight_layout()
     print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
 # first week of june
-# test_batteries([500], 0,186)
+# test_batteries([500], 0,168)
 # # first week of december
-# test_batteries([500], 1008, 1194)
-plt.show()
+# test_batteries([500], 1008, 1176)
+
 
 ############## TEST EPSILONS ##########################
 def test_epsilons():
+    training_data, test_data = RealData.get_training_test(7, False, False)
     epsilons = [1,3,5,7,9]
     mdp = MDP(1000,500,500,200,6000,7,7)
     iterations = [100,500,750,1000,2000,5000]
-    # iterations = [5,10,15]
+    # iterations = [1,3,5]
     results = np.zeros((len(epsilons), len(iterations)))
+    
+    rewards = np.zeros((max(iterations), len(epsilons)))
+    print(rewards.shape)
     for j,x in enumerate(iterations):
         for i, e in enumerate(epsilons):
             
-            Q, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x,0.5,0.9,e, mdp)
-            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q, test_data)
+            Q, rewards_per_episode = QLearning.iterate(training_data,x,0.5,0.9,e, mdp)
+            cost, applied_actions, battery_states = mdp.find_policy(Q, test_data)
             results[i,j] = np.sum(cost)
+            if x == max(iterations):
+                rewards[:,i] = rewards_per_episode
+    plt.figure(1)
     
-    fig, ax = plt.subplots()
     colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey", "royalblue"]
+    # colors = ["tab:blue", "tab:orange","tab:green","tab:red","tab:gray"]
     labels = ["decreasing decay = 1", "decreasing decay = 3","decreasing decay = 5","decreasing decay = 7","decreasing decay = 9"]
     markers = ['^','s','x','o', 'd']
 
@@ -479,14 +504,35 @@ def test_epsilons():
     
     plt.xticks(np.arange(0,len(iterations),1), iterations)
     #plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax.set_xlabel('Number of training episodes')
-    ax.set_ylabel('Costs')
+    plt.xlabel('Number of training episodes')
+    plt.ylabel('Costs')
     plt.title('Effect of exploration-exploitation trade-off')
-    ax.legend(loc = 'upper left')
-    plt.savefig("epsilon.png")
+    plt.legend(loc = 'upper left')
+    plt.savefig("epsilon_performance.png", dpi = 300)
+    plt.figure(2)
+    
+    for r in range(len(epsilons)):
+        plt.plot(rewards[:,r], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 4)
+    plt.xlabel("training episode")
+    plt.ylabel('reward per episode')
+    plt.title('Convergence of Q-learning')
+    plt.legend()
+    plt.savefig('rewards_convergence.png', dpi = 300)
+
+    return plt.figure(1), plt.figure(2)
     # plt.show()
 # test_epsilons()
 # plt.show()
+
+########### FUNCTION CALL #################
+############# FUNCTION CALL##################
+# test_lr()
+# test_gamma()
+# f1,f2 = test_epsilons()
+train_models([100,500,1000,2500,5000,10000])
+
+# plt.show()
+
 ############### ACTIONS #################################
 # print(actions)
 # daytime: 9 am - 6 pm
@@ -498,8 +544,6 @@ def check_daytime_actions(actions):
         if daytime[i % 24] == 1:
             daytime_actions.append(actions[i])
     return daytime_actions
-
-
 
 def plot_batteries(a, b, battery_states, baseline_bat):
     plt.plot(battery_states[a:b], color = "red")
@@ -547,101 +591,6 @@ def compare_actions_hist(mdp):
     plt.show()
 
 
-
-################ BASELINE TESTING ##########################
-baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
-
-# plt.show()
-# plt.hist(baseline_actions)
-# plt.show()
-
-
-# print(difference.count(True))
-# plt.show()
-#print(baseline_rewards)
-
-# print(baseline_bat)
-# print(baseline_actions)
-# print("baseline: ")
-# print(baseline_rewards)
-# print(MDP.get_total_costs(baseline_rewards))
-unique = set(baseline_states)
-print(len(unique))
-# print(baseline_states.count())
-# print(baseline_ids)
-# print(baseline_actions.count("do nothing"))
-
-#  print(MDP.get_total_costs(baseline_rewards))
-# actions_id = [MDP.get_action_id(x) for x in baseline_actions]
-# print(actions_id)
-
-
-# plt.plot(baseline_ids[:(24*2)])
-# plt.show()
-
-
-# print(dat[:(24*3)])
-
-############# Baseline RL Comparison #################
-# diff = [baseline_rewards[i] - reward[i] for i in range(len(reward))]
-# print()
-# print(diff)
-# # print(np.sum(diff))
-# Q2, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning_d.iterate(training_data,500, mdp_d)
-
-# reward2, policy2, battery_states2, dis2, loss, visited_states = mdp_d.find_policy(Q2, test_data)
-
-
-# Q1, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,1000, mdp)
-
-# reward1, policy1, battery_states1, dis, loss, visited_states = mdp.find_policy(Q1, test_data)
-
-
-# print("Q-Learning normal: " + str(np.sum(reward1)))
-# # print("Q-Learning with difference: " + str(np.sum(reward2)))
-
-# print("Baseline:   " + str(np.sum(baseline_rewards)))
-# print("without battery: " + str(mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])))
-
-# # diff = [data["Purchased"][i] + reward[i] for i in range(len(reward))]
-# # print("diff: " + str(diff))
-# # print(len(reward))
-# # print(len(data["Purchased"]))
-# # plot_batteries(0,240,battery_states, baseline_bat)
-# print("amount discharged 1: " + str(dis))
-# # print("amount discharged2 : " + str(dis2))
-
-# # print("amount wasted when discharging" + str(loss))
-# # print(applied_actions)
-
-# plt.plot(rewards_per_episode)
-# plt.show()
-# cons = test_data["Consumption"]
-# scaled_cons = [x/100 for x in cons]
-# prod = test_data["Production"]
-# scaled_prod = [x/100 for x in prod]
-
-
-# # plt.plot(battery_states1[:186], color = "red")
-# # plt.plot(scaled_cons[1000:1240], color = "green")
-# # plt.plot(scaled_prod[1000:1240], color = "yellow")
-# # plt.show()
-# plt.plot(battery_states1[:186], color = "red")
-
-# # plt.plot(battery_states2[:186], color = "green")
-# plt.plot(baseline_bat[:186], color = "black")
-# plt.show()
-
-# plt.plot(battery_states1[200:386], color = "red")
-# plt.plot(baseline_bat[200:386], color = "black")
-# plt.show()
-
-
-# plt.hist(policy1, color = "red")
-# plt.show()
-
-# plt.hist(policy2, color = "green")
-
 def data_to_states(mdp, data):
     states = []
     for i in range(len(data)-1):
@@ -652,7 +601,3 @@ def data_to_states(mdp, data):
         # print(State(data["Consumption"][i], data["Production"][i], 2, data["Production"][i+1],data["Time"][i]).consumption)
     # return states   
     return Counter(states)
-# print(len(Counter(baseline_states)))
-#print(baseline_states[:100])
-# plt.hist(baseline_actions)
-# plt.show()

@@ -154,9 +154,33 @@ class RealData:
 
 
 # month * days * hours
-
-
+    def plot_data(summer, winter):
+        data = RealData.get_real_data()
+        
+        data = RealData.get_summer_pd(data)
+        fig = plt.figure()
+        ax = fig.add_subplot(1,2,1)
+        ax.plot(data["Production"][:168], color = "royalblue", linestyle = "dashed", label = "Production")
+        ax.plot(data["Consumption"][:168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
+        ax.set_title("Summer")
+        ax.set_xticks(np.arange(12,200,24), np.arange(0,8,1))
+        ax.set_xlabel('Days')
+        ax.set_ylabel('Value in Wh')
+        ax.legend()
+        data = RealData.get_winter_pd(data)
+        
+        ax = fig.add_subplot(1,2,2)
+        ax.plot(data["Production"][:168], color = "royalblue", linestyle = "dashed", label = "Production")
+        ax.plot(data["Consumption"][:168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
+        ax.set_title("Winter")
+        ax.set_xticks(np.arange(12,180,24), np.arange(1,8,1))
+        ax.set_xlabel('Days')
+        ax.set_ylabel('Value in Wh')
+        ax.legend()
+        plt.suptitle('Production and Demand')
+        #plt.savefig('DataSA.png', dpi = 300)
 # print(training_data["Production"] - training_data["Consumption"])
 
-#print(RealData.train])
-
+# #print(RealData.train])
+# RealData.plot_data(True, False)
+# plt.show()
