@@ -208,12 +208,16 @@ class Policy:
             
             action_A = mdp.action_space[mdp.get_best_action(Q_A[int(State2.get_id(state_A, mdp)),:])]
             action_B = mdp.action_space[mdp.get_best_action(Q_B[int(State2.get_id(state_B, mdp)),:])]
-            action_C = mdp.action_space[mdp.get_best_action(Q_C[int(State2.get_id(state_C, mdp)),:])]
+            # print("length:" + str(len(Q_C[int(State2.get_id(state_C, mdp)),:])))
+            # print('best action' + str(mdp.get_best_action(Q_C[int(State2.get_id(state_C, mdp)),:])))
+            action_C = mdp.action_space_c[mdp.get_best_action(Q_C[int(State2.get_id(state_C, mdp)),:])]
             
+            # Q_C[int(State2.get_id(state_C, mdp)),:]
+            # mdp.action_space_c[mdp.get_best_action(a_C)]
             cost_A, cost_B, cost_C = Reward.get_cost(state_A, state_B, state_C, action_A, action_B, action_C, mdp)
-            costs_A.append(- cost_A)
-            costs_B.append(- cost_B)
-            costs_C.append(- cost_C)
+            costs_A.append(cost_A)
+            costs_B.append(cost_B)
+            costs_C.append(cost_C)
             
             
             policy_A.append(action_A)
@@ -222,12 +226,12 @@ class Policy:
             battery_A.append(state_A.battery)
             battery_B.append(state_B.battery)
             
-            state_A = State.get_next_state(state_A,data[i,0], data[i,3], data[(i+1)%l,3] ,data[i,7], action_A, action_B, action_C, mdp)
-            state_B = State.get_next_state(state_B,data[i,1], data[i,4], data[(i+1)%l,4] ,data[i,7], action_A, action_B, action_C, mdp)
-            state_C = State.get_next_state(state_C,data[i,2], data[i,5], data[(i+1)%l,5] ,data[i,7], action_A, action_B, action_C, mdp)
+            state_A = State.get_next_state(state_A,data[i,0], data[i,3], data[(i+1)%l,3] ,data[i,7],mdp, action_A, action_B, action_C)
+            state_B = State.get_next_state(state_B,data[i,1], data[i,4], data[(i+1)%l,4] ,data[i,7],mdp, action_A, action_B, action_C)
+            state_C = State.get_next_state(state_C,data[i,2], data[i,5], data[(i+1)%l,5] ,data[i,7],mdp, action_A, action_B, action_C)
 
 
-        return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A, battery_B
+        return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A
 
     def iterate_q(Q_table, self):
         actions = []

@@ -150,20 +150,20 @@ class Baseline_MA3:
         return costs_A,costs_B,costs_C, actions_A, actions_B, actions_C, battery
     
     def find_best_action(state, mdp):
-        print(state.p - state.c)
+        # print(state.p - state.c)
         if state.p - state.c >= mdp.charge_high and state.battery + mdp.charge_high <= mdp.max_battery:
             action = "charge_high"
-            print("charge_high")
+            # print("charge_high")
         elif state.p - state.c >= mdp.charge_low and state.battery + mdp.charge_low <= mdp.max_battery:
             action = "charge_low"
-            print("charge_low")
+            # print("charge_low")
         elif (state.c - state.p) >= mdp.discharge_low and state.battery - mdp.discharge_high >= 0:
             action = "discharge_high"
-            print("discharge_high")
+            # print("discharge_high")
         elif (state.c - state.p) > 0 and state.battery - mdp.discharge_low >= 0:
             action = "discharge_low"
-            print("discharge_low")
+            # print("discharge_low")
         else:
             action = "do nothing"
-            print("do nothing")
+            # print("do nothing")
         return action

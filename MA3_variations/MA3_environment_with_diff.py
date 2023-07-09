@@ -98,21 +98,21 @@ class Policy:
         discharged = 0
         loss = 0
         
-        state_A = State(data[0,0], data[0,3], 2000, data[0,8], mdp)
-        state_B = State(data[0,1], data[0,4], 2000, data[0,8], mdp)
-        state_C = State(data[0,2], data[0,5], 2000, data[0,8], mdp)
+        state_A = State(data[0,0], data[0,3], 2000, data[0,7], mdp)
+        state_B = State(data[0,1], data[0,4], 2000, data[0,7], mdp)
+        state_C = State(data[0,2], data[0,5], 2000, data[0,7], mdp)
         l = data.shape[0]
 
         for i in range(l):
             
-            action_A = mdp.action_space[mdp.get_best_action(Q_A[int(State2.get_id(state_A, mdp)),:])]
-            action_B = mdp.action_space[mdp.get_best_action(Q_B[int(State2.get_id(state_B, mdp)),:])]
-            action_C = mdp.action_space[mdp.get_best_action(Q_C[int(State2.get_id(state_C, mdp)),:])]
+            action_A = mdp.action_space[mdp.get_best_action(Q_A[int(State.get_id(state_A, mdp)),:])]
+            action_B = mdp.action_space[mdp.get_best_action(Q_B[int(State.get_id(state_B, mdp)),:])]
+            action_C = mdp.action_space[mdp.get_best_action(Q_C[int(State.get_id(state_C, mdp)),:])]
             
             cost_A, cost_B, cost_C = Reward.get_cost(state_A, state_B, state_C, action_A, action_B, action_C, mdp)
-            costs_A.append(- cost_A)
-            costs_B.append(- cost_B)
-            costs_C.append(- cost_C)
+            costs_A.append(cost_A)
+            costs_B.append(cost_B)
+            costs_C.append(cost_C)
             
             
             policy_A.append(action_A)
@@ -121,12 +121,12 @@ class Policy:
             battery_A.append(state_A.battery)
             battery_B.append(state_B.battery)
             
-            state_A = State.get_next_state(state_A,data[i,0], data[i,3] ,data[i,8], action_A, action_B, action_C, mdp)
-            state_B = State.get_next_state(state_B,data[i,1], data[i,4] ,data[i,8], action_A, action_B, action_C, mdp)
-            state_C = State.get_next_state(state_C,data[i,2], data[i,5] ,data[i,8], action_A, action_B, action_C, mdp)
+            state_A = State.get_next_state(state_A,data[i,0], data[i,3] ,data[i,7], mdp, action_A, action_B, action_C)
+            state_B = State.get_next_state(state_B,data[i,1], data[i,4] ,data[i,7], mdp, action_A, action_B, action_C)
+            state_C = State.get_next_state(state_C,data[i,2], data[i,5] ,data[i,7], mdp, action_A, action_B, action_C)
 
 
-        return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A, battery_B
+        return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A
 
     def iterate_q(Q_table, self):
         actions = []

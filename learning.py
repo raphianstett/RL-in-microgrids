@@ -88,7 +88,7 @@ class Baseline:
         current_state = State(data[0,1], data[0,2], 2000, data[1,2] ,data[0,3], mdp)
         l = data.shape[0]
         
-        for i in range(1,l):
+        for i in range(0,l):
             
             if current_state.p - current_state.c >= mdp.charge_high and current_state.battery + mdp.charge_high <= mdp.max_battery:
                 action = "charge_high"
@@ -113,8 +113,10 @@ class Baseline:
             
             battery.append(current_state.battery)
             diffs.append((current_state.c - current_state.p) >= mdp.discharge_high and current_state.battery - mdp.discharge_high >= 0)
-
-            current_state = State.get_next_state(current_state, action, data[i,0], data[i,1],data[(i+1)%l,2] ,data[i,3], mdp)
+            if i == l-1:
+                continue
+            else:
+                current_state = State.get_next_state(current_state, action, data[i+1,0], data[i+1,1],data[(i+2)%l,2] ,data[i+1,3], mdp)
             # print(current_state.consumption, current_state.production, current_state.battery,current_state.time)
 
         return rewards, states, actions, battery, diffs

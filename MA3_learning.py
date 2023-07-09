@@ -117,9 +117,9 @@ class Baseline_MA3:
         actions_C = []
         battery = []
         
-        state_A = State(data[0,0], data[0,3], 2000, data[1,3] ,data[0,8], mdp)
-        state_B = State(data[0,1], data[0,4], 2000, data[1,4] ,data[0,8], mdp)
-        state_C = State(data[0,2], data[0,5], 2000, data[1,5] ,data[0,8], mdp)
+        state_A = State(data[0,0], data[0,3], 2000, data[1,3] ,data[0,7], mdp)
+        state_B = State(data[0,1], data[0,4], 2000, data[1,4] ,data[0,7], mdp)
+        state_C = State(data[0,2], data[0,5], 2000, data[1,5] ,data[0,7], mdp)
         l = data.shape[0]
 
         for i in range(1,l):
@@ -145,27 +145,27 @@ class Baseline_MA3:
             
             battery.append(state_A.battery)
             
-            state_A = State.get_next_state(state_A,data[i,0], data[i,3], data[(i+1)%l,3] ,data[i,8], action_A, action_B, action_C, mdp)
-            state_B = State.get_next_state(state_B,data[i,1], data[i,4], data[(i+1)%l,4] ,data[i,8], action_A, action_B, action_C, mdp)
-            state_C = State.get_next_state(state_C,data[i,2], data[i,5], data[(i+1)%l,5] ,data[i,8], action_A, action_B, action_C, mdp)
+            state_A = State.get_next_state(state_A,data[i,0], data[i,3], data[(i+1)%l,3] ,data[i,7], mdp, action_A, action_B, action_C)
+            state_B = State.get_next_state(state_B,data[i,1], data[i,4], data[(i+1)%l,4] ,data[i,7], mdp, action_A, action_B, action_C)
+            state_C = State.get_next_state(state_C,data[i,2], data[i,5], data[(i+1)%l,5] ,data[i,7], mdp, action_A, action_B, action_C)
 
         return costs_A,costs_B,costs_C, actions_A, actions_B, actions_C, battery
     
     def find_best_action(state, mdp):
-        print(state.p - state.c)
+        #print(state.p - state.c)
         if state.p - state.c >= mdp.charge_high and state.battery + mdp.charge_high <= mdp.max_battery:
             action = "charge_high"
-            print("charge_high")
+            #print("charge_high")
         elif state.p - state.c >= mdp.charge_low and state.battery + mdp.charge_low <= mdp.max_battery:
             action = "charge_low"
-            print("charge_low")
+            #print("charge_low")
         elif (state.c - state.p) >= mdp.discharge_low and state.battery - mdp.discharge_high >= 0:
             action = "discharge_high"
-            print("discharge_high")
+            #print("discharge_high")
         elif (state.c - state.p) > 0 and state.battery - mdp.discharge_low >= 0:
             action = "discharge_low"
-            print("discharge_low")
+            #print("discharge_low")
         else:
             action = "do nothing"
-            print("do nothing")
+            #print("do nothing")
         return action

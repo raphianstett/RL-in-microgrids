@@ -14,7 +14,7 @@ import os
 import matplotlib.pyplot as plt
 from collections import Counter
 from matplotlib.ticker import FormatStrFormatter
-
+import pandas as pd
 
 ##### TESTING FOR RL EVALUATION ####
 # import test data
@@ -57,8 +57,9 @@ def test_binning(iterations):
     results = np.zeros((len(bins), len(iterations)))
     subfolder_name = 'Q_SA_models'
     for i,b in enumerate(bins):
+        print("bin_testing: " + str(bins))
         for j,n in enumerate(iterations):
-            print("bin testing")
+            #print("bin testing")
             mdp = MDP(1000, 500, 500, 200, 6000, b, b)
             file_path = os.path.join(subfolder_name, 'Q' +str(b) +  str(n)+ '.csv')
             Q =  np.genfromtxt(file_path, delimiter=',')
@@ -245,48 +246,48 @@ def train_models(iterations):
     os.makedirs(subfolder_name, exist_ok=True)
     for i,n in enumerate(iterations):
         
-        # normal model with 3 bins
-        mdp = MDP(1000,500,500,200,6000,3,3)
-        Q3, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        # # normal model with 3 bins
+        # mdp = MDP(1000,500,500,200,6000,3,3)
+        # Q3, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
-        # normal model with 5 bins
-        mdp = MDP(1000,500,500,200,6000,5,5)
-        Q5, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        # # normal model with 5 bins
+        # mdp = MDP(1000,500,500,200,6000,5,5)
+        # Q5, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
-        # normal model with 7 bins
-        mdp = MDP(1000,500,500,200,6000,7,7)
-        Q7, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        # # normal model with 7 bins
+        # mdp = MDP(1000,500,500,200,6000,7,7)
+        # Q7, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
-        # normal model with 10 bins
-        mdp = MDP(1000,500,500,200,6000,10,10)
-        Q10, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
+        # # normal model with 10 bins
+        # mdp = MDP(1000,500,500,200,6000,10,10)
+        # Q10, rewards_per_episode = QLearning.iterate(training_data,n,0.5,0.9,4, mdp)
         
         # model with difference
         dmdp = dMDP(1000,500,500,200,6000)
         dQ, rewards_per_episode = dQLearning.iterate(training_data,n,0.5,0.9, dmdp)
         
-        # model without prediciton
-        rmdp = rMDP(1000,500,500,200,6000,5,5)
-        rQ, rewards_per_episode = rQLearning.iterate(training_data,n,0.5,0.9, rmdp)
+        # # model without prediciton
+        # rmdp = rMDP(1000,500,500,200,6000,5,5)
+        # rQ, rewards_per_episode = rQLearning.iterate(training_data,n,0.5,0.9, rmdp)
         
-        # Define the file path within the subfolder
-        file_path = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
-        np.savetxt(file_path, Q3, delimiter=',', fmt='%d')
+        # # Define the file path within the subfolder
+        # file_path = os.path.join(subfolder_name, 'Q3' + str(n)+ '.csv')
+        # np.savetxt(file_path, Q3, delimiter=',', fmt='%d')
 
-        file_path = os.path.join(subfolder_name, 'Q5' + str(n)+ '.csv')
-        np.savetxt(file_path, Q5, delimiter=',', fmt='%d')
+        # file_path = os.path.join(subfolder_name, 'Q5' + str(n)+ '.csv')
+        # np.savetxt(file_path, Q5, delimiter=',', fmt='%d')
 
-        file_path = os.path.join(subfolder_name, 'Q7' + str(n)+ '.csv')
-        np.savetxt(file_path, Q7, delimiter=',', fmt='%d')
+        # file_path = os.path.join(subfolder_name, 'Q7' + str(n)+ '.csv')
+        # np.savetxt(file_path, Q7, delimiter=',', fmt='%d')
 
-        file_path = os.path.join(subfolder_name, 'Q10' + str(n)+ '.csv')
-        np.savetxt(file_path, Q10, delimiter=',', fmt='%d')
+        # file_path = os.path.join(subfolder_name, 'Q10' + str(n)+ '.csv')
+        # np.savetxt(file_path, Q10, delimiter=',', fmt='%d')
         
         file_path = os.path.join(subfolder_name, 'dQ' + str(n)+ '.csv')
         np.savetxt(file_path, dQ, delimiter=',', fmt='%d')
         
-        file_path = os.path.join(subfolder_name, 'rQ' + str(n)+ '.csv')
-        np.savetxt(file_path, rQ, delimiter=',', fmt='%d')
+        # file_path = os.path.join(subfolder_name, 'rQ' + str(n)+ '.csv')
+        # np.savetxt(file_path, rQ, delimiter=',', fmt='%d')
     
 
 def test_state_spaces(iterations):
@@ -338,7 +339,7 @@ def test_state_spaces(iterations):
     colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
     
     labels = ["MDP with 5 bins", "MDP with 3 bins","MDP with difference","MDP without prediciton"]
-    markers = ['^','s','x','o', ]
+    markers = ['^','s','x','o']
 
     for r in range(4):
         plt.plot(results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
@@ -360,6 +361,8 @@ def test_state_spaces(iterations):
 #test_state_spaces([500])
 # plt.show()
 # test_state_spaces()
+import seaborn as sns
+import matplotlib.transforms
 ### Policy comparisons ####
 def test_policies(iterations):
     training_data, test_data = RealData.get_training_test(7, False, False)
@@ -401,9 +404,35 @@ def test_policies(iterations):
     baseline_rewards, baseline_states, policy_baseline, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
     fig, ax = plt.subplots()
     #plt.style.use('seaborn-deep')
+    # print(len(policy_5), len(policy_r), len(policy_3), len(policy_d), len(policy_baseline))
+    items5, counts5 = zip(*sorted(Counter(policy_5).items()))
+    items3, counts3 = zip(*sorted(Counter(policy_3).items()))
+    itemsd, countsd = zip(*sorted(Counter(policy_d).items()))
+    itemsr, countsr = zip(*sorted(Counter(policy_r).items()))
+    itemsbl, countsbl = zip(*sorted(Counter(policy_baseline).items()))
     
-    plt.hist([policy_5, policy_3, policy_d, policy_r, policy_baseline], label= ['5 bins','3 bins', 'with difference', 'without prediction', 'rule-based baseline'], color = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey","purple"], rwidth=0.8)
-    ax.legend(loc = 'upper right')
+    plt.plot(items5+items3+ itemsd + itemsr + itemsbl, [5]*len(items5+items3+ itemsd + itemsr + itemsbl), visible=False)
+
+    trans1 = matplotlib.transforms.Affine2D().translate(-0.2,0)
+    trans2 = matplotlib.transforms.Affine2D().translate(-0.1,0) 
+    trans3 = matplotlib.transforms.Affine2D().translate(+0.1,0)
+    trans4 = matplotlib.transforms.Affine2D().translate(+0.2,0)
+    ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
+    print(items5, counts5)
+    plt.bar(items5, counts5, label="5 bins", width=0.1, transform=trans1+plt.gca().transData, color = "lightcoral")
+    plt.bar(items3, counts3, label="3 bins", width=0.1, transform=trans2+plt.gca().transData, color = "sandybrown")
+    plt.bar(itemsd,countsd, label = "with difference", width = 0.1, color = "yellowgreen")
+    plt.bar(itemsr,countsr, label = "without prediction", width = 0.1, transform=trans3+plt.gca().transData, color = "lightslategrey")
+    plt.bar(itemsbl,countsbl, label = "rule-based baseline", width = 0.1, transform=trans4+plt.gca().transData, color = "purple")
+    plt.title('Policies of different models')
+    plt.legend()
+
+
+
+    # df = pd.DataFrame({"item": policy_5 + policy_3 + policy_d + policy_r + policy_baseline, "implementation": [0]*len(policy_5) + [1]*len(policy_5) + [2]*len(policy_5) + [3]*len(policy_5)+ [4]*len(policy_5)})
+    # sns.countplot(data = df, x = 'item', hue = 'implementation')
+    # #plt.hist([policy_5, policy_3, policy_d, policy_r, policy_baseline], label= ['5 bins','3 bins', 'with difference', 'without prediction', 'rule-based baseline'], color = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey","purple"], rwidth=0.9)
+    #ax.legend(loc = 'upper right')
 
     # print(np.sum(costs_5), np.sum(dcosts), np.sum(rcosts), np.sum(baseline_rewards))
 # test_policies([500])
@@ -454,10 +483,10 @@ def test_batteries(iterations, start, end):
         ax = fig.add_subplot(2,2,i+1)
         ax.plot(b[start:end], color = colors[i])
         ax.set_title(labels[i])
-        ax.plot(baseline_bat[start:end], color = "lightgrey", linestyle = "dashdot")
+        ax.plot(baseline_bat[start:end], color = "darkgrey", linestyle = "dashdot")
         ax.set_xlabel('Days')
         ax.set_ylabel('State of battery')
-        ax.set_xticks(np.arange(12,200,24), np.arange(0,8,1))
+        ax.set_xticks(np.arange(12,180,24), np.arange(1,8,1))
         
     plt.suptitle('Battery states for different Models')    
     plt.savefig("batteries.png", dpi = 300)
@@ -529,9 +558,14 @@ def test_epsilons():
 # test_lr()
 # test_gamma()
 # f1,f2 = test_epsilons()
-train_models([100,500,1000,2500,5000,10000])
+# train_models([100,500,1000,2500,5000,10000])
+test_state_spaces([100,500,1000,2500,5000,10000])
+test_batteries([100,500,1000,2500,5000,10000], 0,168)
+test_batteries([100,500,1000,2500,5000,10000], 1000,1168)
 
-# plt.show()
+test_policies([100,500,1000,2500,5000,10000])
+# test_binning([100,500,1000,2500,5000,10000])
+plt.show()
 
 ############### ACTIONS #################################
 # print(actions)

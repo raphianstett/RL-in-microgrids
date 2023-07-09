@@ -34,7 +34,8 @@ class MDP:
         # self.difference = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500", "5000"]
 
         self.difference = ["-2500","-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500", "5000"]
-    
+        # self.difference = ["-2000", "-1500", "-1000", "-500"," 0", "500", "1000", "1500", "2000","2500", "3000","3500", "4000", "4500", "5000"]
+        
         # time
         self.time = [*range(0,24,1)]
 
@@ -79,7 +80,7 @@ class MDP:
         # bins = [-1947.0, -404.0, -323.0, -245.0, -221.0, -166.0, -102.0, 364.0, 1400.0, 3156.0, 4844.0]
         diff = self.difference
         
-        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'right'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  bins[10], closed = 'right'), pd.Interval(left = bins[10],right =  bins[11], closed = 'right'), pd.Interval(left = bins[11],right =  bins[12], closed = 'right'), pd.Interval(left = bins[12],right =  bins[13], closed = 'right'), pd.Interval(left = bins[13],right =  bins[14], closed = 'right')]
+        intervals = [pd.Interval(left = bins[0], right = bins[1], closed = 'right'),pd.Interval(left = bins[1],right = bins[2], closed = 'right'), pd.Interval(left = bins[2],right =  bins[3], closed = 'right'), pd.Interval(left = bins[3],right =  bins[4], closed = 'right'), pd.Interval(left = bins[4],right =  bins[5], closed = 'right'), pd.Interval(left = bins[5],right =  bins[6], closed = 'right'), pd.Interval(left = bins[6],right =  bins[7], closed = 'right'), pd.Interval(left = bins[7],right =  bins[8], closed = 'right'),pd.Interval(left = bins[8],right =  bins[9], closed = 'right'), pd.Interval(left = bins[9],right =  bins[10], closed = 'right'), pd.Interval(left = bins[10],right =  bins[11], closed = 'right'), pd.Interval(left = bins[11],right =  bins[12], closed = 'right'), pd.Interval(left = bins[12],right =  bins[13], closed = 'right'), pd.Interval(left = bins[13],right =  bins[14], closed = 'right'), pd.Interval(left = bins[14],right =  bins[15], closed = 'right')]
         # print("intervals: "  + str(intervals))
         return self.get_label_for_value(intervals, diff, d)
     
@@ -175,10 +176,12 @@ class State:
     
 
     def get_id(state, mdp):
+        # print(state.d)
         #diff = {"-2000":0, "-1500":1, "-1000":2, "-500":3," 0":4, "500":5, "1000":6, "1500":7, "2000":8,"2500":9, "3000":10,"3500":11, "4000":12, "4500":13, "5000":14}
         diff = {"-2500":0, "-2000":1, "-1500":2, "-1000":3, "-500":4," 0":5, "500":6, "1000":7, "1500":8, "2000":9,"2500":10, "3000":11,"3500":12, "4000":13, "4500":14, "5000":15}
         
         d = diff.get(state.difference)
+        # print(state.difference)
         return d * (mdp.n_battery*24) + mdp.get_battery_id(state.battery)  * 24 + state.time
     
     def check_action(state,action, mdp):
