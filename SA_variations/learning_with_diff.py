@@ -84,7 +84,7 @@ class QLearning:
             # update the exploration proba using exponential decay formula after each episode
             exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*e))
             rewards_per_episode.append(total_episode_reward)
-            # print(e) if e % 10 == 0 else None 
+            print(e) if e % 100 == 0 else None 
         
         return Q_table, rewards_per_episode
 

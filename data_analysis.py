@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-
+from collections import Counter
+from data import RealData
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -214,125 +214,113 @@ def check_prediction(prod):
     return x
 
 def check_difference(cons, prod):
-    q = [0]*len(cons)
-    # prod = list(prod)
-    # cons = list(cons)
-    # prod[prod == 0] = 1
-    # cons[cons == 0] = 1
-    #for i in range(len(cons)):
-        # diff = max((prod[i] / cons[i]),(cons[i]/ prod[i])) if (prod[i] != 0 and cons[i] != 0) else 1
-        # q[i] = quot
     
+   
     diff = [prod[i] - cons[i] for i in range(len(prod))]
-    diff_bool = [diff[i] < -200   for i in range(len(diff))]
+    diff_bool = [diff[i]<-200 for i in range(len(diff))]
     #print(len(diff_bool))
     
-    return diff
+    return Counter(diff_bool)
 
-def check_difference2(cons,prod):
-    prod = list(prod)
-    prod = [1 if x == 0 else x for x in prod]
-    cons = list(cons)
-    cons = [1 if x == 0 else x for x in cons]
+# def check_difference2(cons,prod):
+#     prod = list(prod)
+#     prod = [1 if x == 0 else x for x in prod]
+#     cons = list(cons)
+#     cons = [1 if x == 0 else x for x in cons]
 
-    diff = [prod[i+1]/prod[i] for i in range(len(prod)-1)]
-    #[(prod[i+1]/prod[i]) for i in range(len(prod)-1)]
+#     diff = [prod[i+1]/prod[i] for i in range(len(prod)-1)]
+#     #[(prod[i+1]/prod[i]) for i in range(len(prod)-1)]
 
-    return diff
+#     return diff
+x, data = RealData.get_training_test(7, False, False)
+b = check_difference(data[:,0], data[:,1])
+print("b:" + str(b))
 
-b = check_difference(dat["Consumption"], dat['Production'])
-print("mean")
-print(np.mean(b))
-print(np.median(b))
-print("max and min: ")
-print(max(b))
-print(min(b))
-
-d = np.sort(b)
-# n = int(len(b) / 10) 
-n = int((max(b) - min(b)) / 10)
-m = min(b)
-print((max(b) - min(b)))
-print(n)
-steps = [m + 0*n ,m + n,m + 2*n,m + 3*n,m + 4*n,m + 5*n,m + 6*n,m + 7*n,m + 8*n, m + 9*n, m + 10*n]
-print(steps)
-intervals = [d[0], d[n], d[2*n], d[3*n], d[4*n], d[5*n], d[6*n], d[7*n], d[8*n], d[9*n], d[10*n - 1]]
-print(intervals)
-# print(b.count(True))
-#print(check_difference(dat["Consumption"], dat['Production']))
-# print(max(check_difference(dat["Consumption"], dat['Production'])))
-# print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
-# print(np.median(check_difference(dat["Consumption"], dat['Production'])))
-plt.plot(check_difference(dat["Consumption"], dat['Production'])[:240])
-plt.show()
-
-# plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
-# plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
-# # print(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
-
+# d = np.sort(b)
+# # n = int(len(b) / 10) 
+# n = int((max(b) - min(b)) / 10)
+# m = min(b)
+# print((max(b) - min(b)))
+# print(n)
+# steps = [m + 0*n ,m + n,m + 2*n,m + 3*n,m + 4*n,m + 5*n,m + 6*n,m + 7*n,m + 8*n, m + 9*n, m + 10*n]
+# print(steps)
+# intervals = [d[0], d[n], d[2*n], d[3*n], d[4*n], d[5*n], d[6*n], d[7*n], d[8*n], d[9*n], d[10*n - 1]]
+# print(intervals)
+# # print(b.count(True))
+# #print(check_difference(dat["Consumption"], dat['Production']))
+# # print(max(check_difference(dat["Consumption"], dat['Production'])))
+# # print(np.mean(check_difference(dat["Consumption"], dat['Production'])))
+# # print(np.median(check_difference(dat["Consumption"], dat['Production'])))
+# plt.plot(check_difference(dat["Consumption"], dat['Production'])[:240])
 # plt.show()
-max_battery = 4
-step_size = 0.5 
-#battery = [*range(0,max_battery+1,0.5)]
-battery = list(np.arange(0.0, float(max_battery) + step_size, step_size))
-# print(battery)
-# print(len(battery))
 
-def get_battery_id(battery):
-    return int(battery * 2) 
+# # plt.plot(check_difference(dat["Consumption"], dat['Production'])[3600:3624])
+# # plt.plot(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
+# # # print(check_difference2(dat["Consumption"], dat['Production'])[3600:3624])
 
-## Plotting data exemplary
-# print(len(dat["Consumption"]))
+# # plt.show()
+# max_battery = 4
+# step_size = 0.5 
+# #battery = [*range(0,max_battery+1,0.5)]
+# battery = list(np.arange(0.0, float(max_battery) + step_size, step_size))
+# # print(battery)
+# # print(len(battery))
+
+# def get_battery_id(battery):
+#     return int(battery * 2) 
+
+# ## Plotting data exemplary
+# # print(len(dat["Consumption"]))
 
 
-hours = np.arange(500, 741)  # Assuming each value represents a day
-days = (hours - 500) / 24  # Convert days to hours
-x_ticks = days
-x_ticklabels = hours
+# hours = np.arange(500, 741)  # Assuming each value represents a day
+# days = (hours - 500) / 24  # Convert days to hours
+# x_ticks = days
+# x_ticklabels = hours
 
-plt.rcParams["font.size"] = 12
-plt.rcParams["font.family"] = "Arial"
+# plt.rcParams["font.size"] = 12
+# plt.rcParams["font.family"] = "Arial"
 
-plt.figure(figsize=(10, 5))
+# plt.figure(figsize=(10, 5))
 
-plt.plot(dat["Consumption"][0:168], color="red", linestyle="-", label="Demand")
-plt.plot(dat["Production"][0:168], color="green", linestyle="dashdot", label="Production")
+# plt.plot(dat["Consumption"][0:168], color="red", linestyle="-", label="Demand")
+# plt.plot(dat["Production"][0:168], color="green", linestyle="dashdot", label="Production")
 
-plt.xlabel("Days")
-plt.xticks([], [])
-plt.ylabel("Value in Wh")
-plt.title("Demand and Production")
-plt.legend()
+# plt.xlabel("Days")
+# plt.xticks([], [])
+# plt.ylabel("Value in Wh")
+# plt.title("Demand and Production")
+# plt.legend()
 
-# plt.show()
-## figure to compare cases in data and in baseline
-# charge_high, charge_low, nothing, discharge_low, discharge_high
-in_data = [2028, 447, 741, 5487, 60]
-in_baseline = [1354, 461, 3793, 3138, 13]
+# # plt.show()
+# ## figure to compare cases in data and in baseline
+# # charge_high, charge_low, nothing, discharge_low, discharge_high
+# in_data = [2028, 447, 741, 5487, 60]
+# in_baseline = [1354, 461, 3793, 3138, 13]
 
-num_bins = min(len(in_data), len(in_baseline))
+# num_bins = min(len(in_data), len(in_baseline))
 
-# Set the bar width for each pairwise value
-bar_width = 0.35
+# # Set the bar width for each pairwise value
+# bar_width = 0.35
 
-# Calculate the x-axis positions for the bars
-x = range(num_bins)
+# # Calculate the x-axis positions for the bars
+# x = range(num_bins)
 
-# Plot the histogram
-fig, ax = plt.subplots()
-rects1 = ax.bar(x, in_data[:num_bins], bar_width, color='blue', label='in_data')
-rects2 = ax.bar([i + bar_width for i in x], in_baseline[:num_bins], bar_width, color='orange', label='in_baseline')
+# # Plot the histogram
+# fig, ax = plt.subplots()
+# rects1 = ax.bar(x, in_data[:num_bins], bar_width, color='blue', label='in_data')
+# rects2 = ax.bar([i + bar_width for i in x], in_baseline[:num_bins], bar_width, color='orange', label='in_baseline')
 
-# Add labels, title, and legend
-ax.set_xlabel('Actions')
-ax.set_ylabel('Value')
-ax.set_title('Histogram of Pairwise Values')
-ax.set_xticks([i + bar_width/2 for i in x])
-ax.set_xticklabels(x)
-ax.legend()
-#plt.show()
+# # Add labels, title, and legend
+# ax.set_xlabel('Actions')
+# ax.set_ylabel('Value')
+# ax.set_title('Histogram of Pairwise Values')
+# ax.set_xticks([i + bar_width/2 for i in x])
+# ax.set_xticklabels(x)
+# ax.legend()
+# #plt.show()
 
-# print(np.median(dat["Production"]))
-# print(dat["Date"][5880:6048])
-print(int(2500/3))
+# # print(np.median(dat["Production"]))
+# # print(dat["Date"][5880:6048])
+# print(int(2500/3))
 

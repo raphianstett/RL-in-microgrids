@@ -159,7 +159,7 @@ class Data_2:
 
     def get_data_B():
         dat = Data_2.get_data()
-        dat_B = pd.DataFrame(dat, columns=['Consumption_B', 'Production_B', 'is weekend', 'Time']) 
+        dat_B = pd.DataFrame(dat, columns=['Consumption_B', 'Production_B', 'Time', 'is weekend']) 
         dat_B['Date'] = Data_2.get_days().repeat(24)
         dat_B = dat_B.rename(columns = {"Consumption_B" : "Consumption", "Production_B" : "Production"})
         return dat_B

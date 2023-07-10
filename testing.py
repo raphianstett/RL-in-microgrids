@@ -79,8 +79,8 @@ def test_binning(iterations):
     plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
     bs_without = mdp.get_total_costs(test_data[:,1] - test_data[:,0])
     plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashdot")
-    ax.set_xlabel('Number of training episodes')
-    ax.set_ylabel('Costs')
+    plt.xlabel('Number of training episodes')
+    plt.ylabel('Costs')
     plt.xticks(x, iterations, rotation=45)
     plt.title('Effect of binning on RL performance')
     ax.legend()
@@ -90,29 +90,52 @@ def test_binning(iterations):
 
 #test_binning()
 ### TEST CHARGING STEP SIZES ###
-def test_steps():
+def test_steps_baseline():
     charge_high_steps =    [1500, 1000, 1000, 500]
     charge_low_steps =     [1000, 500, 500, 200]
     discharge_high_steps = [1000, 1000, 500, 200]
     discharge_low_steps =  [500, 500, 200, 100]
-    iterations =  [100,500,750,1000,2000,5000, 10000]
+    costs = []
+    for i in range(len(charge_high_steps)):
+        mdp = MDP(charge_high_steps[i], discharge_high_steps[i], charge_low_steps[i], discharge_low_steps[i], 6000, 7,7)
+        baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
+        costs.append(np.sum(baseline_rewards))
+    plt.plot(costs, marker = 'o', markersize = 5)
+    x = np.arange(0,4,1)
+    labels = ["(1500,1000,1000,500)", "(1000,500,1000,500)","(1000,500,500,200)", "(500,200,200,100)"]
+    plt.xticks(x, labels, rotation=10)
+    plt.xlabel('Step sizes')
+    plt.ylabel('Costs')
+    plt.title('Effect of step-sizes on baseline performance')
+    plt.savefig("test_steps_baseline.png", dpi = 300)
+
+def test_steps(iterations):
+    training_data, test_data = RealData.get_training_test(7, False, False)
+    charge_high_steps =    [1500, 1000, 1000, 500]
+    charge_low_steps =     [1000, 500, 500, 200]
+    discharge_high_steps = [1000, 1000, 500, 200]
+    discharge_low_steps =  [500, 500, 200, 100]
+    
+    # iterations =  [100,500,1000,2500,5000, 10000]
     # iterations = [1,2]
     labels = [(1500,1000,1000,500), (1000,500,1000,500),(1000,500,500,200), (500,200,200,100)]
     results = np.zeros((len(charge_high_steps), len(iterations)))
     baseline = [0]*len(charge_high_steps)
+    subfolder_name = 'Q_test_steps'
     for i in range(len(charge_high_steps)):
-        mdp = MDP(charge_high_steps[i], discharge_high_steps[i], charge_low_steps[i], discharge_low_steps[i], 6000, 7,7)
+        mdp = MDP(charge_high_steps[i], discharge_high_steps[i], charge_low_steps[i], discharge_low_steps[i], 6000, 5,5)
         
         
         for j,x in enumerate(iterations):
             print("step testing")
-            Q_table_sol, rewards_per_episode, all_rewards, actions, states_id, states, battery = QLearning.iterate(training_data,x, 0.5,0.9, mdp)
-            cost, applied_actions, battery_states, dis, loss, states = mdp.find_policy(Q_table_sol, test_data)
+            Q, rewards_per_episode = QLearning.iterate(training_data,x, 0.5,0.9,4, mdp)
+            file_path = os.path.join(subfolder_name, 'Q' + str(i) + str(j) + '.csv')
+            np.savetxt(file_path, Q, delimiter=',', fmt='%d')
+            cost, applied_actions, battery_states = mdp.find_policy(Q, test_data)
             results[i,j] = np.sum(cost)
     # do result plot
     colors = ["lightcoral", "sandybrown", "yellowgreen", "lightslategrey"]
     markers = ['^','s','x','o']
-    fig, ax = plt.subplots()
     x = np.arange(len(iterations))
     for r in range(len(charge_high_steps)):
         plt.plot(x, results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
@@ -120,16 +143,16 @@ def test_steps():
     mdp_bs = MDP(1000,500,500,200,6000,7,7)
     baseline_rewards, baseline_states, baseline_actions, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp_bs)
     
-    plt.plot([np.sum(baseline_rewards)]*len(charge_high_steps), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
-    bs_without = mdp.get_total_costs(test_data["Production"] - test_data["Consumption"])
+    plt.plot([np.sum(baseline_rewards)]*len(iterations), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
+    bs_without = mdp.get_total_costs(test_data[:,1] - test_data[:,0])
     plt.plot([bs_without]*len(iterations), label ="Baseline without ESS", color = "grey", linestyle = "dashed")
     
-    ax.set_xlabel('Number of training episodes')
-    ax.set_ylabel('Costs')
-    plt.xticks(x, iterations, rotation=45)
-    plt.title('Effect of ESS Model step sizes on RL performance')
-    ax.legend()
-    plt.savefig("test_steps.png", dpi = 300)
+    plt.xlabel('Number of training episodes')
+    plt.ylabel('Costs')
+    plt.xticks(x, iterations)
+    # plt.title('Effect of ESS Model step sizes on RL performance')
+    plt.legend()
+    plt.savefig("test_steps_new.png", dpi = 300)
 #test_steps()
     
 ##### TEST LEARNING RATE #####
@@ -352,8 +375,8 @@ def test_state_spaces(iterations):
     # plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     ax.set_xlabel('Number of training episodes')
     ax.set_ylabel('Costs')
-    plt.title('Effect of MDP on RL performance')
-    ax.legend()
+    # plt.title('Effect of MDP on RL performance')
+    ax.legend(loc = "lower right")
     plt.savefig("state_spaces.png", dpi = 300)
     #plt.show()
 
@@ -402,7 +425,7 @@ def test_policies(iterations):
     
     # Baseline
     baseline_rewards, baseline_states, policy_baseline, baseline_bat, difference= Baseline.find_baseline_policy(test_data, mdp)
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots()
     #plt.style.use('seaborn-deep')
     # print(len(policy_5), len(policy_r), len(policy_3), len(policy_d), len(policy_baseline))
     items5, counts5 = zip(*sorted(Counter(policy_5).items()))
@@ -555,17 +578,20 @@ def test_epsilons():
 
 ########### FUNCTION CALL #################
 ############# FUNCTION CALL##################
+test_steps([100,500,1000,2500,5000,10000])
+plt.show()
 # test_lr()
 # test_gamma()
 # f1,f2 = test_epsilons()
 # train_models([100,500,1000,2500,5000,10000])
-test_state_spaces([100,500,1000,2500,5000,10000])
-test_batteries([100,500,1000,2500,5000,10000], 0,168)
-test_batteries([100,500,1000,2500,5000,10000], 1000,1168)
+#test_state_spaces([100,500,1000,2500,5000,10000])
+# test_batteries([100,500,1000,2500,5000,10000], 0,168)
+# test_batteries([100,500,1000,2500,5000,10000], 1000,1168)  
 
-test_policies([100,500,1000,2500,5000,10000])
+# test_policies([100,500,1000,2500,5000,10000])
 # test_binning([100,500,1000,2500,5000,10000])
-plt.show()
+#test_binning()
+#plt.show()
 
 ############### ACTIONS #################################
 # print(actions)

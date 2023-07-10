@@ -10,16 +10,21 @@ def test_exploration(i, e, color):
     exploration_proba = 1
     for i in range(i):  
           
-        exploration_proba = max(min_exploration_proba, np.exp(-exploration_decreasing_decay*i))
+        exploration_proba = -max(min_exploration_proba, np.exp(-exploration_decreasing_decay*i))
         exp[i] = exploration_proba
-    plt.plot(exp, color = color)
+    plt.plot(exp, color = color, label = "decay = " + str(e))
     return exp
     # plt.plot(test_exploration(500))
-
-test_exploration(5000, 1, "red")
-test_exploration(5000, 4, "blue")
-test_exploration(5000, 8, "yellow")
-test_exploration(5000, 10, "green")
+["lightcoral", "sandybrown", "yellowgreen", "lightslategrey", "royalblue"]
+[1,3,5,7,9]
+test_exploration(5000, 1, "lightcoral")
+test_exploration(5000, 3, "sandybrown")
+test_exploration(5000, 5, "yellowgreen")
+test_exploration(5000, 7, "lightslategrey")
+test_exploration(5000, 9, "royalblue")
+plt.title('Exploration probability functions')
+plt.xlabel("training episodes")
+plt.legend()
 plt.show()
 import matplotlib.pyplot as plt
 
