@@ -52,8 +52,6 @@ def get_performances(episodes):
     results_B_SA = np.zeros((4,len(episodes)))
     results_A_MA = np.zeros((3,len(episodes)))
     results_B_MA = np.zeros((3,len(episodes)))
-    print(len(results_A_SA))
-    print(len(results_A_MA))
     for i,n in enumerate(episodes):
         print(n)
         # # 5 bins
@@ -162,7 +160,6 @@ def plot_pairwise_performance(episodes):
     # PLOT B    
     plt.figure()
     for r in range(3):
-        print(r)
         plt.plot(results_B_MA[r,], color = str(colors[r]),marker = 'o', markersize = 5, label = "2MARL with " + str(labels[r]))
         plt.plot(results_B_SA[r,], color = str(colors[r]),marker = 'x', markersize = 5, label = "SARL with " + str(labels[r]))
     
@@ -216,9 +213,9 @@ def plot_policies_between(agent):
 
 
 ###########   FUNCTION CALLS    ####################
-plot_pairwise_performance([100,500,1000,2500,5000,10000])
-plot_policies_between('A')
-plot_policies_between('B')
+# plot_pairwise_performance([100,500,1000,2500,5000,10000])
+# plot_policies_between('A')
+# plot_policies_between('B')
 
 # plt.show()
 

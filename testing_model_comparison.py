@@ -10,13 +10,13 @@ from matplotlib.lines import Line2D
 This is a final test file to compare the different models. It contains:
     - plot_improvement() to generate the bar charts for the respective improvements of the cost functions
     - compare_three() compares the performances of agents A and B in the single agent and the 3MARL model
-The files access the policy performances inside the specific testing files.
+The files access the policy performances inside the specific testing files. Function calls are at the bottom.
 '''
 
 def plot_improvement():
-    costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances([10000])
-    costs_5_2, costs_7_2, costs_d_2, baseline_costs_2, bs_2 = MA2_testing.get_performances([10000])
-    costs_5_3, costs_7_3, costs_d_3, baseline_costs_3, bs_3 = MA3_testing.get_performances_all([10000])
+    costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances_SARL(10000, 'A')
+    costs_5_2, costs_7_2, costs_d_2, baseline_costs_2, bs_2 = MA2_testing.get_performances_2MARL([10000])
+    costs_5_3, costs_7_3, costs_d_3, baseline_costs_3, bs_3 = MA3_testing.get_performances_3MARL_all([10000])
     perf1 = [1 - (costs_5_1/bs_1),1 - ( costs_7_1/bs_1), 1 - (costs_d_1/bs_1), 1 - (baseline_costs_1/bs_1)]
     perf2 = [1 - (costs_5_2/bs_2), 1 - (costs_7_2/bs_2), 1 - (costs_d_2/bs_2), 1 - (baseline_costs_2/bs_2)]
     perf3 = [1 - (costs_5_3/bs_3),1 - ( costs_7_3/bs_3), 1 - (costs_d_3/bs_3), 1 - (baseline_costs_3/bs_3)]
@@ -40,7 +40,7 @@ def plot_improvement():
     ax.set_xticklabels(["5 bins", "7 bins", "difference", "baselines"])
 
     ax.legend(loc = 'lower left')
-    plt.savefig('Comparison_all.png', dpi = 300)
+    plt.savefig('plots/Comparison_all.png', dpi = 300)
 
 
 def compare_three():
@@ -56,11 +56,11 @@ def compare_three():
 
         single_A[:,i] = [costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1]
 
-        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances_2MARL(n, 'B')
+        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances_SARL(n, 'B')
         single_B[:,i] = [costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1]
 
 
-        costs_5_A3,costs_5_B3, costs_7_A3,costs_7_B3, costs_d_A3,costs_d_B3, baseline_costs_A3,baseline_costs_B3, bs_A3,bs_B3 = MA3_testing.get_performances_3MARL(n)
+        costs_5_A3,costs_5_B3, costs_7_A3,costs_7_B3, costs_d_A3,costs_d_B3, baseline_costs_A3,baseline_costs_B3, bs_A3,bs_B3 = MA3_testing.get_performance_3MARL(n)
         multi_A[:,i] = [costs_5_A3, costs_7_A3, costs_d_A3,baseline_costs_A3, bs_A3]
         multi_B[:,i] = [costs_5_B3, costs_7_B3, costs_d_B3, baseline_costs_B3, bs_B3]
     
@@ -111,9 +111,10 @@ def compare_three():
     fig.legend(custom_legend, ['MDP with 5 bins', 'MDP with 7 bins','MDP with difference', 'rule-based baselines', 'baseline without ESS', 'Single Agent', '3MARL Agent'],bbox_to_anchor=(0.75, 1.0), fontsize = 'small', ncol = 3)
 
     
-    plt.savefig("one_three_comparison.png", dpi = 300, bbox_inches = 'tight')
+    plt.savefig("plots/one_three_comparison.png", dpi = 300, bbox_inches = 'tight')
 
 
-plot_improvement()
+# plot_improvement()
+# plt.show()
 compare_three()
 plt.show()

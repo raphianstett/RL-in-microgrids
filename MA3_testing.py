@@ -287,7 +287,7 @@ def plot_conflicts(episodes):
     results, results_A, results_B, results_C, \
     batteries, batterybs, policies_3, policies_5, policies_7, \
     policies_10, policies_d, policies_bs, confs = get_performances(episodes)
-    print(confs)
+    
     plt.figure()
     labels = ["MDP with 3 bins", "MDP with 5 bins","MDP with 7 bins","MDP with 10 bins", "MDP with difference"]
     colors = ["lightcoral", "royalblue","sandybrown","lightslategrey","yellowgreen"]
@@ -367,29 +367,28 @@ def plot_policies(episodes):
         plt.legend(fontsize = "small")
         plt.savefig("plots/3MARL/policy_" + str(x) + ".png", dpi = 300)
         
-# train_MA3([3])
+# train_MA3([600])
 # plot_total_performance([100,500,1000])
-plot_total_performance([100,500,1000,2500,5000,10000])
-plot_battery_courses(10000, 0, 186)
+# plot_total_performance([100,500,1000,2500,5000,10000])
+
+# plot_battery_courses(10000, 0, 186)
 # plot_battery_courses(10000, 700, 886)
 
 # plot_battery_courses(10000, 1000, 1186)
 # plot_battery_courses(10000, 1500, 1686)
 
+# plot_conflicts([100,500,1000,2500,5000,10000])
 
-plot_conflicts([100,500,1000,2500,5000,10000])
-
-plot_single_performances([100,500,1000,2500,5000,10000])
+# plot_single_performances([100,500,1000,2500,5000,10000])
 # # plot_policies(10000)
 # plt.show()
 
 
 # helper functions for other tests
-def get_performance_3MARL(episodes):
+def get_performance_3MARL(n):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     
     subfolder_name = '3MARL/Q_3MARL'
-    n = episodes[0]
     # # 5 bins
     mdp5 = MDP(1000, 500, 500, 250, 12000, 5,5)
     file_path_A = os.path.join(subfolder_name, 'Q_A5_' + str(n)+ '.csv')
@@ -431,11 +430,11 @@ def get_performance_3MARL(episodes):
     return np.sum(costs_A5), np.sum(costs_B5), np.sum(costs_A7), np.sum(costs_B7), np.sum(costs_Ad), np.sum(costs_Bd), np.sum(costs_Abl), np.sum(costs_Bbl), np.sum(bs_A), np.sum(bs_B)
 
 
-def get_performances_all(episodes):
+def get_performances_3MARL_all(n):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     
     subfolder_name = '3MARL/Q_3MARL'
-    n = episodes[0]
+
     # # 5 bins
     mdp5 = MDP(1000, 500, 500, 250, 12000, 5,5)
     file_path_A = os.path.join(subfolder_name, 'Q_A5_' + str(n)+ '.csv')
