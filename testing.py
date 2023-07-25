@@ -528,7 +528,7 @@ def train_models(episodes):
         np.savetxt(file_path, rQ, delimiter=',', fmt='%d')
     
 # function which is relevant for comparison of different microgrid environments
-def get_performances_2(episodes, agent):
+def get_performances_SARL(episodes, agent):
     training_data, test_data = Data.get_training_test(7, False, False)
     results = np.zeros((6,len(episodes)))
     subfolder_name = 'Q_SA_models' if agent == 'A' else 'Q_Agent_B'

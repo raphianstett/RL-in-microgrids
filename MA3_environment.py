@@ -72,11 +72,13 @@ class State(sState):
         next_battery = self.get_next_battery(action_A, action_B, action_C, mdp)
         return State(new_c, new_p, int(next_battery), new_pred, new_time, mdp)
 
-        
+    def get_action_for_delta(self,delta, mdp):
+        return mdp.action_space[mdp.battery_steps.index(delta)]
+    
     def check_actions(state, action_A, action_B, action_C, mdp):
-        deltaA = State.get_battery_value(action_A, mdp)
-        deltaB = State.get_battery_value(action_B, mdp)
-        deltaC = State.get_battery_value(action_C, mdp)
+        deltaA = State.get_step(action_A, mdp)
+        deltaB = State.get_step(action_B, mdp)
+        deltaC = State.get_step(action_C, mdp)
         deltaA, deltaB, deltaC = State.check_deltas(state,deltaA, deltaB, deltaC, mdp)
     
         # # check if deltas changed and get new actions
@@ -88,9 +90,9 @@ class State(sState):
     
     def check_conflict(state, action_A, action_B, action_C, mdp):
         
-        deltaA = State.get_battery_value(action_A, mdp)
-        deltaB = State.get_battery_value(action_B, mdp)
-        deltaC = State.get_battery_value(action_C, mdp)
+        deltaA = State.get_step(action_A, mdp)
+        deltaB = State.get_step(action_B, mdp)
+        deltaC = State.get_step(action_C, mdp)
         deltaA, deltaB, deltaC = State.check_deltas(state,deltaA, deltaB, deltaC, mdp)
 
         # # check if deltas changed and get new actions

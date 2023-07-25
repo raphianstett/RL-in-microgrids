@@ -20,9 +20,23 @@ from Variations.MA3_learning_with_diff import MA3_QLearning as dMA3_QLearning
 from MA_data import Data_3
 from MA_data import Data_2
 
+'''
+This file contains functions to generate the plots from the thesis and functions to train the models. As previously, some Q-tables for 
+the iterations [100,500,1000,2500,5000, 10000] are already trained and stored in '3MARL/Q_3MARL'.
+- train_MA3(): trains models with given list of training episodes
+- get_performances(): helper function to return policy, ESS courses, cost outcomes
+Plot functions:
+- plot_total_performance()
+- plot_battery_courses()
+- plot_conflicts()
+- plot_single_performances()
+- plot_policies()
 
+exemplary function calls are given below
+'''
 
-# train MA on different models
+# function train MA on different models
+# pre-trained for episodes = [100,500,1000,2500,5000, 10000]
 def train_MA3(episodes):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     
@@ -93,7 +107,7 @@ def train_MA3(episodes):
 def get_performances(episodes):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     # episodes = [100,500,1000,2500,5000, 10000]
-    # episodes = [1,2,3,4,5]
+    
     results = np.zeros((7,len(episodes)))
     results_A = np.zeros((7,len(episodes)))
     results_B = np.zeros((7,len(episodes)))
@@ -101,11 +115,11 @@ def get_performances(episodes):
     
 
     confs = np.zeros((6,len(episodes)))
-    subfolder_name = 'Q_3MARL'
+    subfolder_name = '3MARL/Q_3MARL'
     abc = ["A", "B", "C"]
     
     for i,n in enumerate(episodes):
-        print(n)
+        
         # # 3 bins
         mdp3 = MDP(1000, 500, 500, 250, 12000, 3,3)
         file_path_A = os.path.join(subfolder_name, 'Q_A3_' + str(n)+ '.csv')
@@ -206,15 +220,14 @@ def get_performances(episodes):
         
         results[6,i] = bs
         
-        batteries = [battery3, battery5, battery7, battery10, batteryd]
+        batteries = [battery3, battery5, battery10, batteryd]
         policies_3 = [actions_A3, actions_B3, actions_C3]
         policies_5 = [actions_A5, actions_B5, actions_C5]
         policies_7 = [actions_A7, actions_B7, actions_C7]
         policies_10 = [actions_A10, actions_B10, actions_C10]
         policies_d = [actions_Ad, actions_Bd, actions_Cd]
         policies_bs = [policy_Abs, policy_Bbs, policy_Cbs]
-        conf = [conflicts_3, conflicts_5, conflicts_7, conflicts_10, conflicts_d, conflicts_bs]
-        return results, results_A, results_B, results_C, batteries, batterybs, policies_3, policies_5, policies_7, policies_10, policies_d, policies_bs, conf
+    return results, results_A, results_B, results_C, batteries, batterybs, policies_3, policies_5, policies_7, policies_10, policies_d, policies_bs, confs
 
 
 def plot_total_performance(episodes):
@@ -222,7 +235,7 @@ def plot_total_performance(episodes):
     plt.figure()
     results, results_A, results_B, results_C, \
     batteries, batterybs, policies_3, policies_5, policies_7, \
-    policies_10, policies_d, policies_bs, conf = get_performances(episodes)
+    policies_10, policies_d, policies_bs, confs = get_performances(episodes)
 
     colors = ["lightcoral", "sandybrown", 'royalblue',"lightslategrey","yellowgreen"]
     
@@ -273,16 +286,17 @@ def plot_battery_courses(episodes, start, end):
 def plot_conflicts(episodes):
     results, results_A, results_B, results_C, \
     batteries, batterybs, policies_3, policies_5, policies_7, \
-    policies_10, policies_d, policies_bs, conf = get_performances(episodes)
-
+    policies_10, policies_d, policies_bs, confs = get_performances(episodes)
+    print(confs)
     plt.figure()
     labels = ["MDP with 3 bins", "MDP with 5 bins","MDP with 7 bins","MDP with 10 bins", "MDP with difference"]
     colors = ["lightcoral", "royalblue","sandybrown","lightslategrey","yellowgreen"]
     markers = ['^','s','d','o','x']
 
     for i in range(5):
-        plt.plot(conf[i,:], color = colors[i], label = labels[i], marker = markers[i], markersize = 5)
-    plt.plot(conf[5,:], color = "purple",label = "rule-based baseline", linestyle = "dashdot")
+        print(i)
+        plt.plot(confs[i,:], color = colors[i], label = labels[i], marker = markers[i], markersize = 5)
+    plt.plot(confs[5,:], color = "purple",label = "rule-based baseline", linestyle = "dashdot")
     plt.xticks(np.arange(0,len(episodes),1),episodes)
     plt.ylabel('Number of conflicts')
     plt.xlabel('Number of training episodes')
@@ -307,7 +321,7 @@ def plot_single_performances(episodes):
         ax = fig.add_subplot(1,3,i+1)
         results = results_A if x == "A" else (results_B if x == "B" else results_C)
         for r in range(5):
-            print(r)
+        
             ax.plot(results[r,], color = str(colors[r]), label = str(labels[r]), linestyle = "solid", marker = markers[r], markersize = 5)
             
         ax.plot([min(results[5,])]*len(episodes), label ="rule-based Baseline", color = "purple", linestyle = "dashdot")
@@ -355,20 +369,23 @@ def plot_policies(episodes):
         plt.savefig("plots/3MARL/policy_" + str(x) + ".png", dpi = 300)
         
 
-plot_total_performance([100,500,1000,2500,5000,10000])
-plot_battery_courses([10000], 0, 186)
-plot_battery_courses([10000], 700, 886)
+plot_total_performance([100,500,1000])
+# plot_total_performance([100,500,1000,2500,5000,10000])
+# plot_battery_courses(10000, 0, 186)
+# plot_battery_courses(10000, 700, 886)
 
-plot_battery_courses([10000], 1000, 1186)
-plot_battery_courses([10000], 1500, 1686)
+# plot_battery_courses(10000, 1000, 1186)
+# plot_battery_courses(10000, 1500, 1686)
 
 
-plot_conflicts([100,500,1000,2500,5000,10000])
-plot_single_performances([100,500,1000,2500,5000,10000])
-plot_policies([10000])
+# plot_conflicts([100,500,1000,2500,5000,10000])
 plt.show()
+# plot_single_performances([100,500,1000,2500,5000,10000])
+# # plot_policies(10000)
+# plt.show()
 
 
+# helper functions for other tests
 def get_performance_3MARL(episodes):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     
@@ -415,10 +432,10 @@ def get_performance_3MARL(episodes):
     return np.sum(costs_A5), np.sum(costs_B5), np.sum(costs_A7), np.sum(costs_B7), np.sum(costs_Ad), np.sum(costs_Bd), np.sum(costs_Abl), np.sum(costs_Bbl), np.sum(bs_A), np.sum(bs_B)
 
 
-def get_performances_3MARL_all(episodes):
+def get_performances_all(episodes):
     training_data, test_data = Data_2.split_data(Data_3.get_data(), 7)
     
-    subfolder_name = 'Q_3MARL'
+    subfolder_name = '3MARL/Q_3MARL'
     n = episodes[0]
     # # 5 bins
     mdp5 = MDP(1000, 500, 500, 250, 12000, 5,5)

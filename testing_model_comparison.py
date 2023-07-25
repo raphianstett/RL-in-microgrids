@@ -5,52 +5,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-def plot_comparison():
+''' 
+This is a final test file to compare the different models. It contains:
+    - plot_improvement() to generate the bar charts for the respective improvements of the cost functions
+    - compare_three() compares the performances of agents A and B in the single agent and the 3MARL model
+'''
+
+
+def plot_improvement():
     costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances([10000])
     costs_5_2, costs_7_2, costs_d_2, baseline_costs_2, bs_2 = MA2_testing.get_performances([10000])
     costs_5_3, costs_7_3, costs_d_3, baseline_costs_3, bs_3 = MA3_testing.get_performances_all([10000])
     perf1 = [1 - (costs_5_1/bs_1),1 - ( costs_7_1/bs_1), 1 - (costs_d_1/bs_1), 1 - (baseline_costs_1/bs_1)]
     perf2 = [1 - (costs_5_2/bs_2), 1 - (costs_7_2/bs_2), 1 - (costs_d_2/bs_2), 1 - (baseline_costs_2/bs_2)]
     perf3 = [1 - (costs_5_3/bs_3),1 - ( costs_7_3/bs_3), 1 - (costs_d_3/bs_3), 1 - (baseline_costs_3/bs_3)]
-    print("baseline 3 costs:" + str(baseline_costs_3))
-    print("2 difference costs" + str(costs_d_2))
-    print("baseline 2: " + str(baseline_costs_2))
-    print("3 difference costs: " + str(costs_d_3))
-    print(bs_3)
-    print(perf1)
-    print(perf2)
-    print(perf3)   
-    # Set the number of bars
+     
     num_bars = len(perf1)
 
-    # Set the width of each bar
     bar_width = 0.2
 
-    # Create an array of indices for the x-axis
     x_indices = np.arange(num_bars)
 
-    # Create a figure and axis
     fig, ax = plt.subplots()
 
-    # Plot the bars for each list
     rects1 = ax.bar(x_indices, perf1, bar_width, label='Single Agent', color = "royalblue")
     rects2 = ax.bar(x_indices + bar_width, perf2, bar_width, label='2MARL', color = "sandybrown")
     rects3 = ax.bar(x_indices + 2 * bar_width, perf3, bar_width, label='3MARL', color = "yellowgreen")
 
-    # Set the labels and title
     ax.set_xlabel('Models')
     ax.set_ylabel('Percentage of Improvement')
-    # ax.set_title('Bar Chart with Multiple Lists')
-
-    # Set the x-axis ticks and labels
+    
     ax.set_xticks(x_indices + bar_width)
     ax.set_xticklabels(["5 bins", "7 bins", "difference", "baselines"])
 
-    # Set the legend
     ax.legend(loc = 'lower left')
     plt.savefig('Comparison_all.png', dpi = 300)
-    # Display the plot
-    plt.show() 
+
 
 def compare_three():
     iterations = [100,500,1000,2500,5000,10000]
@@ -61,15 +51,15 @@ def compare_three():
     multi_B = np.zeros((5,len(iterations)))
     
     for i,n in enumerate(iterations):    
-        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances([n], 'A')
+        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances_SARL(n, 'A')
 
         single_A[:,i] = [costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1]
 
-        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances([n], 'B')
+        costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances_2MARL(n, 'B')
         single_B[:,i] = [costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1]
 
 
-        costs_5_A3,costs_5_B3, costs_7_A3,costs_7_B3, costs_d_A3,costs_d_B3, baseline_costs_A3,baseline_costs_B3, bs_A3,bs_B3 = MA3_testing.get_performance([n])
+        costs_5_A3,costs_5_B3, costs_7_A3,costs_7_B3, costs_d_A3,costs_d_B3, baseline_costs_A3,baseline_costs_B3, bs_A3,bs_B3 = MA3_testing.get_performances_3MARL(n)
         multi_A[:,i] = [costs_5_A3, costs_7_A3, costs_d_A3,baseline_costs_A3, bs_A3]
         multi_B[:,i] = [costs_5_B3, costs_7_B3, costs_d_B3, baseline_costs_B3, bs_B3]
     
@@ -106,8 +96,6 @@ def compare_three():
         ax.text(0.5, -0.15, title[j], transform=ax.transAxes, ha='center')
 
     
-    # plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
     custom_legend = [Line2D([0], [0], color='lightcoral', marker='^', linestyle='None'),
                      Line2D([0], [0], color='lightslategrey', marker='s', linestyle='None'),
                      Line2D([0], [0], color='yellowgreen', marker='x', linestyle='None'),
@@ -125,8 +113,6 @@ def compare_three():
     plt.savefig("one_three_comparison.png", dpi = 300, bbox_inches = 'tight')
 
 
-#plot_comparison()
-# compare_three('A')
-# plt.show()
+plot_improvement()
 compare_three()
 plt.show()

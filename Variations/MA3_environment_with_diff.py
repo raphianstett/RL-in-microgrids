@@ -75,10 +75,14 @@ class Policy:
             
             actions.append(action)
         return actions
+    
 
 class State(sState):
-    def __init__(self, c, p, battery, p_next, time, mdp):
-        super().__init__(c, p, battery, p_next, time, mdp)
+    def __init__(self, c, p, battery, time, mdp):
+        super().__init__(c, p, battery, time, mdp)
+    
+    def get_action_for_delta(self,delta, mdp):
+        return mdp.action_space[mdp.battery_steps.index(delta)]
     
     def get_next_state(self, new_c, new_p, new_time, mdp, action_A, action_B, action_C):
         next_battery = self.get_next_battery(action_A, action_B, action_C, mdp)
@@ -88,18 +92,18 @@ class State(sState):
 
     def check_actions(state, action_A, action_B, action_C, mdp):
     
-        deltaA = State.get_battery_value(action_A, mdp)
-        deltaB = State.get_battery_value(action_B, mdp)
-        deltaC = State.get_battery_value(action_C, mdp)
+        deltaA = State.get_step(action_A, mdp)
+        deltaB = State.get_step(action_B, mdp)
+        deltaC = State.get_step(action_C, mdp)
         deltaA, deltaB, deltaC = State.check_deltas(state,deltaA, deltaB, deltaC, mdp)
 
         return deltaA, deltaB, deltaC 
     
     def check_conflict(state, action_A, action_B, action_C, mdp):
         
-        deltaA = State.get_battery_value(action_A, mdp)
-        deltaB = State.get_battery_value(action_B, mdp)
-        deltaC = State.get_battery_value(action_C, mdp)
+        deltaA = State.get_step(action_A, mdp)
+        deltaB = State.get_step(action_B, mdp)
+        deltaC = State.get_step(action_C, mdp)
         deltaA, deltaB, deltaC = State.check_deltas(state,deltaA, deltaB, deltaC, mdp)
       
         # # check if deltas changed and get new actions

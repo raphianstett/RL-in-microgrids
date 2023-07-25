@@ -172,7 +172,7 @@ def plot_pairwise_performance(episodes):
     plt.ylabel("Costs")
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-3, 3))
     plt.xticks(np.arange(0,len(episodes),1), episodes)
-    plt.savefig('performances_agentB.png', dpi = 300)
+    plt.savefig('plots/2MARL/performances_agentB.png', dpi = 300)
 
 # compares policies pairwise between SARL and 2MARL agents
 def plot_policies_between(agent):
@@ -211,11 +211,14 @@ def plot_policies_between(agent):
     plt.bar(items_bs, counts_bs, label="rule-based baseline", width=0.1, transform=trans7+plt.gca().transData, color = "purple", edgecolor = 'white')
     
     plt.legend(fontsize = "small")
+    plt.savefig('plots/2MARL/policies_agent_' + str(agent) + '.png', dpi = 300)
 
 
-plot_pairwise_performance([100,500,1000,2500,5000,10000])
-plot_policies_between('A')
-plot_policies_between('B')
+
+###########   FUNCTION CALLS    ####################
+# plot_pairwise_performance([100,500,1000,2500,5000,10000])
+# plot_policies_between('A')
+# plot_policies_between('B')
 
 plt.show()
 
@@ -297,7 +300,7 @@ def get_performances_2MARL(episodes):
     training_data, test_data =  Data_2.get_training_test(7, False, False)
     subfolder_name_MA = 'Q_2MARL'
     n = episodes[0]
-    results_A_SA, results_B_SA, results_A_MA, results_B_MA, policy_A, policy_B = get_performances(n)
+    results_A_SA, results_B_SA, results_A_MA, results_B_MA, policy_A, policy_B = get_performances([n])
     costs_A5, costs_A7, costs_Ad = results_A_MA[:,0]
     baseline_costs_A = results_A_SA[3,0]
     costs_B5, costs_B7, costs_Bd = results_B_MA[:,0]
