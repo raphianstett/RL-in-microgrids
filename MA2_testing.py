@@ -216,11 +216,11 @@ def plot_policies_between(agent):
 
 
 ###########   FUNCTION CALLS    ####################
-# plot_pairwise_performance([100,500,1000,2500,5000,10000])
-# plot_policies_between('A')
-# plot_policies_between('B')
+plot_pairwise_performance([100,500,1000,2500,5000,10000])
+plot_policies_between('A')
+plot_policies_between('B')
 
-plt.show()
+# plt.show()
 
 ############ TRAINING FUNCTIONS ####################
 
@@ -313,6 +313,5 @@ def get_performances_2MARL(episodes):
     
 
     return costs_A5 + costs_B5, costs_A7 + costs_B7, costs_Ad + costs_Bd,baseline_costs_A + baseline_costs_B, bs_A + bs_B
-
 
 

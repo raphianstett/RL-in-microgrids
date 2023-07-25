@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
+
 ''' 
 This is a final test file to compare the different models. It contains:
     - plot_improvement() to generate the bar charts for the respective improvements of the cost functions
     - compare_three() compares the performances of agents A and B in the single agent and the 3MARL model
+The files access the policy performances inside the specific testing files.
 '''
-
 
 def plot_improvement():
     costs_5_1, costs_7_1, costs_d_1, baseline_costs_1, bs_1 = testing.get_performances([10000])

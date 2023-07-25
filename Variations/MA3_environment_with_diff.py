@@ -10,6 +10,7 @@ class MDP(sMDP):
         super().__init__(charge_high, discharge_high, charge_low, discharge_low, max_battery)
 
         self.action_space_c = ["discharge_high", "discharge_low", "do nothing"]
+        self.n_actions_c = len(self.action_space_c)
     
     def get_best_action(self,q_values):
         min_value = min(q_values)
@@ -32,8 +33,6 @@ class Policy:
         policy_C = []
         battery_A = []
         battery_B = []
-        states = []
-        discharged = 0
         conflicts = 0
         
         state_A = State(data[0,0], data[0,3], 2000, data[0,7], mdp)
@@ -65,16 +64,6 @@ class Policy:
 
 
         return costs_A, costs_B, costs_C, policy_A, policy_B, policy_C, battery_A, conflicts
-
-    def iterate_q(Q_table, self):
-        actions = []
-        for i in range(len(Q_table)):
-            a = Q_table[i,:]
-                    # print("row of Q-values: " +str(a))
-            action = self.action_space[self.get_best_action(a)]
-            
-            actions.append(action)
-        return actions
     
 
 class State(sState):
@@ -133,11 +122,9 @@ class State(sState):
                     i = random.choice(State.get_max(deltas))
                     
                     delta = deltas[i]
-                    
                     if delta > 0:
                         reduction = mdp.charge_low
                         if delta >= reduction:
-                            
                             deltas[i] -= reduction
                             sum_deltas -= reduction
 

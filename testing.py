@@ -463,17 +463,17 @@ def test_batteries(episodes, start, end):
 # test_lr([100,500,1000])
 # test_gamma([100,500,1000])
 
-# test_binning([100,500,1000,2500,5000,10000])
-# test_steps([100,500,1000,2500,5000,10000])
+test_binning([100,500,1000,2500,5000,10000])
+test_steps([100,500,1000,2500,5000,10000])
 
-# test_performances([100,500,1000,2500,5000,10000])
-# test_batteries(10000, 0,168)
+test_performances([100,500,1000,2500,5000,10000])
+test_batteries(10000, 0,168)
 # test_batteries(10000, 1000,1168)
 # test_batteries(10000, 1500,1668)
-# test_policies(10000)
+test_policies(10000)
 
 
-plt.show() # has to be commented in for the plots to be displayed
+# plt.show() # has to be commented in for the plots to be displayed
 
 
 ############### FUNCTION TO TRAIN DIFFERENT MODELS ########################

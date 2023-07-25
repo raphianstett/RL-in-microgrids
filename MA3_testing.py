@@ -119,7 +119,7 @@ def get_performances(episodes):
     abc = ["A", "B", "C"]
     
     for i,n in enumerate(episodes):
-        
+        print(n)
         # # 3 bins
         mdp3 = MDP(1000, 500, 500, 250, 12000, 3,3)
         file_path_A = os.path.join(subfolder_name, 'Q_A3_' + str(n)+ '.csv')
@@ -333,8 +333,7 @@ def plot_single_performances(episodes):
             ax.set_ylabel('Costs', fontsize = 10)
         
         ax.text(0.5, -0.2, title[i], transform=ax.transAxes, ha='center', fontsize = 14)
-    plt.legend(ncol = 4, bbox_to_anchor=(0.2, 1.2))
-    plt.tight_layout()
+    plt.legend(ncol = 4, bbox_to_anchor=(0.2, 1.1))
     plt.savefig('plots/3MARL/performances_single.png')
 
 def plot_policies(episodes):
@@ -368,19 +367,19 @@ def plot_policies(episodes):
         plt.legend(fontsize = "small")
         plt.savefig("plots/3MARL/policy_" + str(x) + ".png", dpi = 300)
         
-
-plot_total_performance([100,500,1000])
-# plot_total_performance([100,500,1000,2500,5000,10000])
-# plot_battery_courses(10000, 0, 186)
+# train_MA3([3])
+# plot_total_performance([100,500,1000])
+plot_total_performance([100,500,1000,2500,5000,10000])
+plot_battery_courses(10000, 0, 186)
 # plot_battery_courses(10000, 700, 886)
 
 # plot_battery_courses(10000, 1000, 1186)
 # plot_battery_courses(10000, 1500, 1686)
 
 
-# plot_conflicts([100,500,1000,2500,5000,10000])
-plt.show()
-# plot_single_performances([100,500,1000,2500,5000,10000])
+plot_conflicts([100,500,1000,2500,5000,10000])
+
+plot_single_performances([100,500,1000,2500,5000,10000])
 # # plot_policies(10000)
 # plt.show()
 

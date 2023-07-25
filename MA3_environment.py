@@ -9,7 +9,8 @@ class MDP(sMDP):
     def __init__(self, charge_high, discharge_high, charge_low, discharge_low, max_battery, bins_cons, bins_prod):
         super().__init__(charge_high, discharge_high, charge_low, discharge_low, max_battery, bins_cons, bins_prod)
         self.action_space_c = ["discharge_high", "discharge_low", "do nothing"]
-    
+        self.n_actions_c = len(self.action_space_c)
+        
     def get_best_action(self,q_values):
         min_value = min(q_values)
         q_values = [value if value != 0 else (min_value -1) for value in q_values]
