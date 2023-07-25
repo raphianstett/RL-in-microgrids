@@ -7,4 +7,7 @@ In general, the mcirogrid models are composed of the files environment, learning
 To test the Q-learning algorithm, plots can be generated in the testing.py, MA2_testing.py, MA3_testing and test_model_comparison.py files. The first three test the performances on each microgrid. The test_model_comparison file generates the plots from the "Comparison of all Models" section from the thesis, where the microgrid models are compared. 
 For most of the models and test cases, pre-trained Q-tables are available and stored in the SARL, 2MARL, 3MARL subfolders. Generated plots are automatically saved in the plots subfolder. Separate descriptions of the test cases and where Q-tables are available are noted in the respective files.
 
-Sidenote: I used a slightly different connotation of the state-action value-function Q(S,A) in the code. The learning rate there does not only influences the temporal difference term but also the previous value of the state-action pair with (1-alpha). However, this has no effect on the interpretation of the learning rate in the thesis. 
+Sidenotes: 
+I used a slightly different connotation of the state-action value-function Q(S,A) in the code. The learning rate there does not only influences the temporal difference term but also the previous value of the state-action pair with (1-alpha). However, this has no effect on the interpretation of the learning rate in the thesis.
+
+The test functions for the 2MARL and 3MARL take some time to develop the policies for all two or three agents.
