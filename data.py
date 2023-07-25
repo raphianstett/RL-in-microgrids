@@ -1,78 +1,25 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import datetime
 
 
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
+class Data:
 
-np.set_printoptions(threshold=np.inf)
-
-
-class StepFunctions:
-    def generate_step_consumption():
-        
-        high_early = [400]*6
-        low = [250]*6 
-        high_late = [400]*3
-        cons_step = [100]*7 + high_early + low + high_late + [100]*2
-        #cons_step = [x + 300 for x in cons_step]
-        return cons_step
-
-
-    # generate step production
-    # use 1500 Wh as production from 9 am to 5 pm
-
-    def generate_step_production():
-        none_early = [0]*8
-        high = [1500]*8
-        none_late = [0]*8
-        return none_early + high + none_late
-
-    # print(generate_step_production())
-    # print(len(generate_step_production()))
-    # print(len(generate_step_consumption()))
-    # plt.plot(generate_step_consumption())
-    # plt.show()
-    cons = np.array(generate_step_consumption())
-    prod = np.array(generate_step_production())
-    diff = prod - cons
-    diff = [0 if x > 0 else x for x in diff]
-    # print(diff)
-    # print(np.sum(diff))
-    # plt.plot(diff)
-    # plt.show()
-
-    # import test data for training and testing
-    def get_test_data():
-        d = {'Consumption': StepFunctions.generate_step_consumption(), 'Production': StepFunctions.generate_step_production(), 'Time': [*range(0,24,1)]}
-        dat = pd.DataFrame(d, columns = ['Consumption', 'Production', 'Time'])
-        
-        # data checking
-
-        prod = dat["Production"]
-        cons = dat["Consumption"]
-        return dat
-    
-class RealData:
-    def get_real_data():
-        dat = pd.read_csv("household_with_pv_new.csv")
+    # returns pandas dataframe
+    def get_data_pd():
+        dat = pd.read_csv("Data/household_with_pv.csv")
         dat = {'Consumption': dat["Consumption"], 'Production': dat["Production"], 'Time': dat["Time"], 'Date': dat["Date"], 'Purchased': dat["Purchased"]}
         dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Date', 'Time'])
         dat['Date'] = pd.to_datetime(dat['Date'])
-        dat = RealData.mark_weekend_days(dat)
-        #dat = pd.DataFrame(dat, columns=['Consumption', 'Production', 'Time', 'is_weekend'])
+        dat = Data.mark_weekend_days(dat)
         return dat
+    
+    # returns numpy array for RL training
     def get_data():
-        dat = RealData.get_real_data()
+        dat = Data.get_data_pd()
         dat = pd.DataFrame(dat, columns= ['Consumption', 'Production', 'Time'])
         return dat.to_numpy()
     
-    def cut_production(df):
-        prod = df["Production"]
-        df["Production"] = [min(x, 4000) for x in prod]
-        return df
 
     def mark_weekend_days(df):
         df['is_weekend'] = df['Date'].apply(lambda x: int(x.weekday() >= 5))
@@ -81,23 +28,25 @@ class RealData:
     def extract_days(group, days):
         return group.head(days)
 
+    # returns two dataframes with training and test split
+    # days sets how many days are extracted from each month for testing
+    # it can be set if only summer or winter data should be used
     def get_training_test(days, get_summer, get_winter):
-        df = RealData.get_real_data()
+        df = Data.get_data_pd()
+
         if get_summer:
-            df = RealData.get_summer_pd(df)
+            df = Data.get_summer_pd(df)
         if get_winter:
-            df = RealData.get_winter_pd(df)
+            df = Data.get_winter_pd(df)
         df['Date'] = pd.to_datetime(df['Date'])
         grouped = df.groupby(df['Date'].dt.to_period('M'))
         n = days * 24
-        new_df = pd.concat([RealData.extract_days(group, n) for _, group in grouped])
+        new_df = pd.concat([Data.extract_days(group, n) for _, group in grouped])
     
-        # Remove the extracted rows from the original DataFrame
         df = df.drop(new_df.index)
         
-        # reset index now
+        
         new_df = new_df.reset_index(drop=True)
-        # Reset the index of the updated DataFrame
         df = df.reset_index(drop=True)
         df = df.drop('Date', axis = 1)
         new_df = new_df.drop('Date', axis = 1)
@@ -106,17 +55,15 @@ class RealData:
         
         return df.to_numpy(), new_df.to_numpy()
 
-   
-
     def equalObs(x, nbin):
         nlen = len(x)
         return np.interp(np.linspace(0, nlen, nbin + 1),
                         np.arange(nlen),
                         np.sort(x))
 
-    #create histogram with equal-frequency bins 
+    #create histogram with equal-frequency bins, is used to determine bin edges for discretisation
     def get_bin_boundaries(data, nbins):
-        n, bins, patches = plt.hist(data, RealData.equalObs(data, nbins), edgecolor='black')
+        n, bins, patches = plt.hist(data, Data.equalObs(data, nbins), edgecolor='black')
         return bins
 
     def get_prod_nonzeros(prod):
@@ -127,13 +74,14 @@ class RealData:
             else: 
                 continue
         return p
-    # function for pd dataframe
+    
+    # function to get summer from pd dataframe
     def get_summer_pd(df):
         df.drop(df.index[2928:7298], inplace=True)
         df.reset_index(drop = True, inplace = True)
         return df
     
-    # function for numpy array
+    # function to get summer from  numpy array
     def get_summer(arr):
         arr = np.delete(arr, np.s_[2928:7298], axis=0)
         return arr
@@ -146,41 +94,34 @@ class RealData:
         return df
     
     #function for numpy array
-
     def get_winter(arr):
         arr = np.delete(arr, np.s_[0:2928], axis=0)
         arr = np.delete(arr, np.s_[4368:], axis=0)
         return arr
 
-
-# month * days * hours
-    def plot_data(summer, winter):
-        data = RealData.get_real_data()
+    # plots data for one week starting from start for winter and summer
+    def plot_data(start):
+        data = Data.get_data_pd()
         
-        data = RealData.get_summer_pd(data)
-        fig = plt.figure()
+        data = Data.get_summer_pd(data)
+        fig = plt.figure(figsize = (10,5))
         ax = fig.add_subplot(1,2,1)
-        ax.plot(data["Production"][:168], color = "royalblue", linestyle = "dashed", label = "Production")
-        ax.plot(data["Consumption"][:168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
+        ax.plot(data["Production"][start:start+168], color = "royalblue", linestyle = "dashed", label = "Production")
+        ax.plot(data["Consumption"][start:start+168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
         ax.set_title("Summer")
         ax.set_xticks(np.arange(12,200,24), np.arange(0,8,1))
         ax.set_xlabel('Days')
         ax.set_ylabel('Value in Wh')
         ax.legend()
-        data = RealData.get_winter_pd(data)
+        data = Data.get_winter_pd(data)
         
         ax = fig.add_subplot(1,2,2)
-        ax.plot(data["Production"][:168], color = "royalblue", linestyle = "dashed", label = "Production")
-        ax.plot(data["Consumption"][:168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
+        ax.plot(data["Production"][start:start+168], color = "royalblue", linestyle = "dashed", label = "Production")
+        ax.plot(data["Consumption"][start:start+168], color = "yellowgreen", linestyle = 'solid', label = "Demand")
         ax.set_title("Winter")
         ax.set_xticks(np.arange(12,180,24), np.arange(1,8,1))
         ax.set_xlabel('Days')
         ax.set_ylabel('Value in Wh')
         ax.legend()
-        plt.suptitle('Production and Demand')
-        #plt.savefig('DataSA.png', dpi = 300)
-# print(training_data["Production"] - training_data["Consumption"])
-
-# #print(RealData.train])
-# RealData.plot_data(True, False)
-# plt.show()
+        plt.tight_layout()
+        plt.savefig('plots/SARL/Data.png', dpi = 300)
